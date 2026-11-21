@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import NextLink from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import {
   Building2,
@@ -17,10 +17,12 @@ import {
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
+  const router = useRouter();
   const pathname = usePathname();
   const { user, logout, loginDemo } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [demoMenuOpen, setDemoMenuOpen] = useState(false);
+  const [demoSwitching, setDemoSwitching] = useState(false);
   const demoMenuRef = useRef<HTMLDivElement>(null);
 
   // Close demo dropdown on click outside
@@ -146,11 +148,17 @@ export const Navbar: React.FC = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      loginDemo('citizen');
+                    disabled={demoSwitching}
+                    onClick={async () => {
+                      setDemoSwitching(true);
                       setDemoMenuOpen(false);
+                      const res = await loginDemo('citizen');
+                      setDemoSwitching(false);
+                      if (res.success) {
+                        router.push('/my-reports');
+                      }
                     }}
-                    className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-[#E7F0EA] text-[#19364A] flex items-center justify-between cursor-pointer transition"
+                    className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-[#E7F0EA] text-[#19364A] flex items-center justify-between cursor-pointer transition disabled:opacity-50"
                   >
                     <div>
                       <span className="block font-semibold">Priya Raman</span>
@@ -162,11 +170,17 @@ export const Navbar: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      loginDemo('admin');
+                    disabled={demoSwitching}
+                    onClick={async () => {
+                      setDemoSwitching(true);
                       setDemoMenuOpen(false);
+                      const res = await loginDemo('admin');
+                      setDemoSwitching(false);
+                      if (res.success) {
+                        router.push('/admin');
+                      }
                     }}
-                    className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-rose-50 text-[#19364A] flex items-center justify-between cursor-pointer transition"
+                    className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-rose-50 text-[#19364A] flex items-center justify-between cursor-pointer transition disabled:opacity-50"
                   >
                     <div>
                       <span className="block font-semibold">Operations Desk</span>
@@ -301,21 +315,33 @@ export const Navbar: React.FC = () => {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => {
-                  loginDemo('citizen');
+                disabled={demoSwitching}
+                onClick={async () => {
+                  setDemoSwitching(true);
                   setMobileMenuOpen(false);
+                  const res = await loginDemo('citizen');
+                  setDemoSwitching(false);
+                  if (res.success) {
+                    router.push('/my-reports');
+                  }
                 }}
-                className="py-2 px-3 rounded-lg bg-[#E7F0EA] border border-[#24796C]/20 text-[#24796C] font-semibold text-center hover:bg-[#24796C] hover:text-white transition"
+                className="py-2 px-3 rounded-lg bg-[#E7F0EA] border border-[#24796C]/20 text-[#24796C] font-semibold text-center hover:bg-[#24796C] hover:text-white transition disabled:opacity-50"
               >
                 Priya Raman (Citizen)
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  loginDemo('admin');
+                disabled={demoSwitching}
+                onClick={async () => {
+                  setDemoSwitching(true);
                   setMobileMenuOpen(false);
+                  const res = await loginDemo('admin');
+                  setDemoSwitching(false);
+                  if (res.success) {
+                    router.push('/admin');
+                  }
                 }}
-                className="py-2 px-3 rounded-lg bg-[#19364A] text-white font-semibold text-center hover:bg-[#24796C] transition"
+                className="py-2 px-3 rounded-lg bg-[#19364A] text-white font-semibold text-center hover:bg-[#24796C] transition disabled:opacity-50"
               >
                 Operations Desk (Admin)
               </button>

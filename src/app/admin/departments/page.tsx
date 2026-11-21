@@ -2,18 +2,22 @@
 
 import React, { useEffect, useState } from 'react';
 import NextLink from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 import { Report } from '@/types';
 import { CIVIC_DEPARTMENTS } from '@/lib/constants';
 import { Building2, Clock, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
 
 export default function AdminDepartmentsPage() {
+  const { idToken } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/reports', { credentials: 'omit' });
+      const headers: Record<string, string> = {};
+      if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+      const res = await fetch('/api/reports', { headers });
       if (res.ok) {
         const d = await res.json();
         setReports(d.reports || []);
@@ -27,7 +31,7 @@ export default function AdminDepartmentsPage() {
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [idToken]);
 
   return (
     <div className="space-y-6">

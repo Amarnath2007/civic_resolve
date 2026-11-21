@@ -41,7 +41,9 @@ function ComplaintQueueContent() {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/reports', { credentials: 'omit' });
+      const headers: Record<string, string> = {};
+      if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+      const res = await fetch('/api/reports', { headers });
       if (res.ok) {
         const d = await res.json();
         setReports(d.reports || []);
@@ -56,7 +58,7 @@ function ComplaintQueueContent() {
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [idToken]);
 
   const filtered = reports.filter((r) => {
     if (statusFilter !== 'All' && r.status !== statusFilter) return false;

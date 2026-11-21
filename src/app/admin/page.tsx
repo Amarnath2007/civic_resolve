@@ -37,7 +37,7 @@ export default function AdminOverviewPage() {
         if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
 
         const [resReports, resStats] = await Promise.all([
-          fetch('/api/reports', { credentials: 'omit' }),
+          fetch('/api/reports', { headers }),
           fetch('/api/admin/stats', { headers }),
         ]);
 

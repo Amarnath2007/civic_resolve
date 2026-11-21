@@ -20,7 +20,7 @@ export default function AdminAnalyticsPage() {
 
         const [resStats, resReports] = await Promise.all([
           fetch('/api/admin/stats', { headers }),
-          fetch('/api/reports', { credentials: 'omit' }),
+          fetch('/api/reports', { headers }),
         ]);
 
         if (resStats.ok) {

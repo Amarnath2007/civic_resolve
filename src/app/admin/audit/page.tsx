@@ -14,7 +14,9 @@ export default function AdminAuditTrailPage() {
     async function fetchReports() {
       setLoading(true);
       try {
-        const res = await fetch('/api/reports', { credentials: 'omit' });
+        const headers: Record<string, string> = {};
+        if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+        const res = await fetch('/api/reports', { headers });
         if (res.ok) {
           const d = await res.json();
           setReports(d.reports || []);
@@ -26,7 +28,7 @@ export default function AdminAuditTrailPage() {
       }
     }
     fetchReports();
-  }, []);
+  }, [idToken]);
 
   // Collect all admin notes and updates
   const auditEntries = reports

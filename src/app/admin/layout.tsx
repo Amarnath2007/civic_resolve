@@ -65,6 +65,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   };
 
+  // If visiting the dedicated admin login page, bypass layout gating and render directly
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#F7F8F4] flex items-center justify-center">
@@ -76,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  // Administrator authorization gate
+  // Administrator authorization gate: strictly rejects unauthenticated users and citizens
   if (!user || !user.isAdmin) {
     return (
       <div className="min-h-screen bg-[#F7F8F4] flex items-center justify-center p-4">
@@ -88,8 +93,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="space-y-1">
             <h1 className="text-2xl font-extrabold text-[#19364A]">Municipal Administrator Portal</h1>
             <p className="text-xs text-[#63736F] leading-relaxed">
-              This area is restricted to authorized municipal officers and operations staff.
+              This area is strictly restricted to authorized municipal officers and operations staff.
             </p>
+            {user && !user.isAdmin && (
+              <p className="text-xs font-semibold text-rose-700 bg-rose-50 py-1.5 px-2.5 rounded-lg border border-rose-200 mt-2">
+                Currently signed in as: {user.email} (Citizen Role)
+              </p>
+            )}
           </div>
 
           <div className="p-4 bg-[#E7F0EA]/70 rounded-xl border border-[#24796C]/20 text-xs text-left space-y-2">
@@ -112,8 +122,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <NextLink href="/" className="text-[#63736F] hover:text-[#19364A] transition font-medium">
               ← Return to Citizen Homepage
             </NextLink>
-            <NextLink href="/login" className="text-[#24796C] font-semibold hover:underline">
-              Sign In with Password
+            <NextLink href="/admin/login" className="text-[#24796C] font-semibold hover:underline">
+              Officer Login
             </NextLink>
           </div>
         </div>

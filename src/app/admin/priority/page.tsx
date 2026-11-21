@@ -16,7 +16,9 @@ export default function AdminPriorityQueuePage() {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/reports', { credentials: 'omit' });
+      const headers: Record<string, string> = {};
+      if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+      const res = await fetch('/api/reports', { headers });
       if (res.ok) {
         const d = await res.json();
         setReports(d.reports || []);
@@ -30,7 +32,7 @@ export default function AdminPriorityQueuePage() {
 
   useEffect(() => {
     fetchReports();
-  }, []);
+  }, [idToken]);
 
   const criticalIssues = reports.filter(
     (r) => (r.finalPriority === 'Critical' || r.finalPriority === 'High') && r.status !== 'Resolved'

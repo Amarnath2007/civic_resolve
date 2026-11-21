@@ -5,31 +5,32 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { role } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const role = body.role === 'admin' ? 'admin' : 'citizen';
     const isAdm = role === 'admin';
-    const email = isAdm ? 'admin@civicresolve.gov' : 'citizen@civicresolve.org';
-    const password = 'CivicResolve2026!';
+
+    const email = isAdm
+      ? process.env.DEMO_ADMIN_EMAIL || 'admin@civicresolve.gov'
+      : process.env.DEMO_CITIZEN_EMAIL || 'citizen@civicresolve.org';
+    const password = isAdm
+      ? process.env.DEMO_ADMIN_PASSWORD || 'CivicResolve2026!'
+      : process.env.DEMO_CITIZEN_PASSWORD || 'CivicResolve2026!';
     const displayName = isAdm ? 'Municipal Operations Desk' : 'Priya Raman';
 
-    const { auth, isConfigured } = getFirebaseAdmin();
-    if (!isConfigured || !auth) {
+    const { auth, firestore, isConfigured } = getFirebaseAdmin();
+    if (!isConfigured || !auth || !firestore) {
       return NextResponse.json(
         { error: 'Firebase Admin is not configured.' },
         { status: 503 }
       );
     }
 
+    let uid: string;
     try {
       const existing = await auth.getUserByEmail(email);
-      // Ensure password is up to date
-      await auth.updateUser(existing.uid, { password, displayName });
-      return NextResponse.json({
-        success: true,
-        uid: existing.uid,
-        email,
-        displayName,
-        created: false,
-      });
+      uid = existing.uid;
+      // Ensure credentials and profile are up to date
+      await auth.updateUser(uid, { password, displayName });
     } catch (err: any) {
       if (err.code === 'auth/user-not-found') {
         const created = await auth.createUser({
@@ -38,16 +39,35 @@ export async function POST(req: NextRequest) {
           displayName,
           emailVerified: true,
         });
-        return NextResponse.json({
-          success: true,
-          uid: created.uid,
-          email,
-          displayName,
-          created: true,
-        });
+        uid = created.uid;
+      } else {
+        throw err;
       }
-      throw err;
     }
+
+    // Set custom claims
+    await auth.setCustomUserClaims(uid, {
+      role,
+      admin: isAdm,
+    });
+
+    // Update Firestore user document
+    await firestore.collection('users').doc(uid).set({
+      uid,
+      email,
+      displayName,
+      role,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+
+    return NextResponse.json({
+      success: true,
+      uid,
+      email,
+      displayName,
+      role,
+      isAdmin: isAdm,
+    });
   } catch (err: any) {
     console.error('Provision demo user error:', err);
     return NextResponse.json(

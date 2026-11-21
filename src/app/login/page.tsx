@@ -8,11 +8,12 @@ import { Building2, Lock, Mail, AlertCircle, ArrowRight, UserCheck } from 'lucid
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loginDemo, isFirebaseActive } = useAuth();
+  const { login, loginDemo } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +24,7 @@ export default function LoginPage() {
     setLoading(false);
 
     if (res.success) {
-      if (email.toLowerCase().includes('admin') || email.toLowerCase().endsWith('.gov')) {
+      if (res.isAdmin) {
         router.push('/admin');
       } else {
         router.push('/my-reports');
@@ -33,11 +34,28 @@ export default function LoginPage() {
     }
   };
 
+  const handleDemoLogin = async (role: 'citizen' | 'admin') => {
+    setError(null);
+    setDemoLoading(role);
+    const res = await loginDemo(role);
+    setDemoLoading(null);
+
+    if (res.success) {
+      if (role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/my-reports');
+      }
+    } else {
+      setError(res.error || 'Could not authenticate demo account with Firebase.');
+    }
+  };
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full bg-white rounded-2xl border border-[#DDE5DF] p-8 shadow-sm space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-[#19364A] text-white rounded-xl mx-auto flex items-center justify-center">
+          <div className="w-12 h-12 bg-[#19364A] text-white rounded-xl mx-auto flex items-center justify-center shadow-xs">
             <Building2 className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-extrabold text-[#19364A]">Sign In to CivicResolve</h1>
@@ -46,7 +64,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Demo Fast Login Buttons for Competition Judges */}
+        {/* Demo Fast Login Buttons for Evaluators */}
         <div className="bg-[#E7F0EA]/70 p-4 rounded-xl border border-[#24796C]/20 space-y-2.5">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#19364A]">
             <UserCheck className="w-4 h-4 text-[#24796C]" />
@@ -55,23 +73,19 @@ export default function LoginPage() {
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
               type="button"
-              onClick={async () => {
-                await loginDemo('citizen');
-                router.push('/my-reports');
-              }}
-              className="py-2 px-3 rounded-lg bg-white border border-[#DDE5DF] font-semibold text-[#19364A] hover:border-[#24796C] transition shadow-xs cursor-pointer text-center"
+              disabled={Boolean(demoLoading)}
+              onClick={() => handleDemoLogin('citizen')}
+              className="py-2 px-3 rounded-lg bg-white border border-[#DDE5DF] font-semibold text-[#19364A] hover:border-[#24796C] transition shadow-xs cursor-pointer text-center disabled:opacity-50"
             >
-              Demo Citizen
+              {demoLoading === 'citizen' ? 'Authenticating...' : 'Demo Citizen'}
             </button>
             <button
               type="button"
-              onClick={async () => {
-                await loginDemo('admin');
-                router.push('/admin');
-              }}
-              className="py-2 px-3 rounded-lg bg-[#19364A] text-white font-semibold hover:bg-[#24796C] transition shadow-xs cursor-pointer text-center"
+              disabled={Boolean(demoLoading)}
+              onClick={() => handleDemoLogin('admin')}
+              className="py-2 px-3 rounded-lg bg-[#19364A] text-white font-semibold hover:bg-[#24796C] transition shadow-xs cursor-pointer text-center disabled:opacity-50"
             >
-              Demo Admin
+              {demoLoading === 'admin' ? 'Authenticating...' : 'Demo Admin'}
             </button>
           </div>
         </div>

@@ -9,27 +9,24 @@ export interface AuthenticatedUser {
 }
 
 /**
- * Checks if an email address is authorized as an administrator via ADMIN_EMAILS environment variable.
+ * Checks if an email address is authorized as an administrator via the ADMIN_EMAILS environment variable.
+ * Requires exact case-insensitive email match.
  */
 export function isEmailAdmin(email?: string | null): boolean {
   if (!email) return false;
-  const adminEmailsEnv = process.env.ADMIN_EMAILS || '';
+  const adminEmailsEnv = process.env.ADMIN_EMAILS || 'admin@civicresolve.gov';
   const adminList = adminEmailsEnv
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 
-  // If in local demo mode and ADMIN_EMAILS not explicitly set, permit standard demo admin
-  if (adminList.length === 0) {
-    return email.toLowerCase().includes('admin@');
-  }
-
-  return adminList.includes(email.toLowerCase());
+  return adminList.includes(email.trim().toLowerCase());
 }
 
 /**
  * Authenticates the incoming request using Firebase ID Token from Authorization header.
- * In local demonstration mode without live Firebase Admin credentials, accepts demo tokens.
+ * Verifies authenticity with Firebase Admin SDK and determines administrative privileges
+ * strictly through server-side custom claims and the server-side ADMIN_EMAILS allowlist.
  */
 export async function authenticateRequest(
   req: NextRequest,
@@ -54,55 +51,30 @@ export async function authenticateRequest(
     try {
       const decodedToken = await auth.verifyIdToken(token);
       const email = decodedToken.email || '';
+      const hasAdminClaim = decodedToken.admin === true || decodedToken.role === 'admin';
+      const isEmailInAdminList = isEmailAdmin(email);
+      const isAdmin = Boolean(hasAdminClaim || isEmailInAdminList);
+
       user = {
         uid: decodedToken.uid,
         email,
-        displayName: decodedToken.name || email.split('@')[0],
-        isAdmin: isEmailAdmin(email),
+        displayName: decodedToken.name || (email ? email.split('@')[0] : 'User'),
+        isAdmin,
       };
     } catch (err: any) {
       console.warn('Firebase ID Token verification error:', err.message);
       return {
         user: null,
-        error: 'Invalid or expired authentication session.',
+        error: 'Invalid or expired authentication session. Please sign in again.',
         status: 401,
       };
     }
   } else {
-    // Demonstration Fallback Authentication mode:
-    // Enables instant evaluation out of the box when evaluating in local environment
-    try {
-      if (token.startsWith('demo-token:')) {
-        const parts = token.split(':');
-        const email = decodeURIComponent(parts[1] || 'citizen@civicresolve.org');
-        const uid = parts[2] || `demo-${email.split('@')[0]}`;
-        user = {
-          uid,
-          email,
-          displayName: email.split('@')[0],
-          isAdmin: isEmailAdmin(email),
-        };
-      } else {
-        // Base64 JSON token fallback for demo
-        const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
-        if (decoded && decoded.email) {
-          user = {
-            uid: decoded.uid || `user-${Date.now()}`,
-            email: decoded.email,
-            displayName: decoded.displayName || decoded.email.split('@')[0],
-            isAdmin: isEmailAdmin(decoded.email),
-          };
-        }
-      }
-    } catch {
-      // If parsing fails, create safe fallback demo user
-      user = {
-        uid: 'demo-user',
-        email: 'citizen@civicresolve.org',
-        displayName: 'Demo Citizen',
-        isAdmin: false,
-      };
-    }
+    return {
+      user: null,
+      error: 'Server authentication service is temporarily unavailable.',
+      status: 503,
+    };
   }
 
   if (!user) {

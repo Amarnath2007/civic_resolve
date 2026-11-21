@@ -20,24 +20,37 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
 
+    const cleanName = name.trim();
+    const cleanEmail = email.trim();
+
+    if (!cleanName) {
+      setError('Please enter your full name.');
+      return;
+    }
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
     if (password.length < 6) {
       setError('Password must be at least 6 characters.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError('Passwords do not match. Please re-enter.');
       return;
     }
 
     setLoading(true);
-    const res = await register(email, password, name);
+    const res = await register(cleanEmail, password, cleanName);
     setLoading(false);
 
     if (res.success) {
       router.push('/my-reports');
     } else {
-      setError(res.error || 'Failed to register account.');
+      setError(res.error || 'Failed to complete registration.');
     }
   };
 
@@ -45,7 +58,7 @@ export default function RegisterPage() {
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full bg-white rounded-2xl border border-[#DDE5DF] p-8 shadow-sm space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 bg-[#24796C] text-white rounded-xl mx-auto flex items-center justify-center">
+          <div className="w-12 h-12 bg-[#24796C] text-white rounded-xl mx-auto flex items-center justify-center shadow-xs">
             <Building2 className="w-6 h-6" />
           </div>
           <h1 className="text-2xl font-extrabold text-[#19364A]">Create Citizen Account</h1>

@@ -1,6 +1,18 @@
-import { getApps, initializeApp, cert, App } from 'firebase-admin/app';
+import { getApps, initializeApp, cert, getApp, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
+
+function cleanEnv(val?: string): string {
+  if (!val) return '';
+  let cleaned = val.trim();
+  if (
+    (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+    (cleaned.startsWith("'") && cleaned.endsWith("'"))
+  ) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  return cleaned;
+}
 
 // Free Spark Plan: Cloud Firestore and Firebase Authentication only.
 // Firebase Storage dependencies have been completely removed.
@@ -12,14 +24,13 @@ export function getFirebaseAdmin(): {
   firestore: Firestore | null;
   auth: Auth | null;
 } {
-  const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const projectId =
+    cleanEnv(process.env.FIREBASE_PROJECT_ID) ||
+    cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+  const clientEmail = cleanEnv(process.env.FIREBASE_CLIENT_EMAIL);
+  let privateKey = cleanEnv(process.env.FIREBASE_PRIVATE_KEY);
 
   if (privateKey) {
-    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
-      privateKey = privateKey.slice(1, -1);
-    }
     // Correctly handle escaped newlines when stored in environment variables
     privateKey = privateKey.replace(/\\n/g, '\n');
   }
