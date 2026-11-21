@@ -26,11 +26,6 @@ export const Navbar: React.FC = () => {
   const [demoMenuOpen, setDemoMenuOpen] = useState(false);
   const demoMenuRef = useRef<HTMLDivElement>(null);
 
-  // If inside the Admin Portal, omit the citizen header so the admin layout controls navigation
-  if (pathname.startsWith('/admin')) {
-    return null;
-  }
-
   // Close demo dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -41,6 +36,11 @@ export const Navbar: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // If inside the Admin Portal, omit the citizen header so the admin layout controls navigation
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
 
   // Middle navigation links
   const middleNavLinks = [
@@ -57,7 +57,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#F7F8F4]/95 backdrop-blur-md border-b border-[#DDE5DF] h-18 sm:h-20 flex items-center transition-colors">
+    <header className="sticky top-0 z-50 bg-[#F7F8F4]/95 backdrop-blur-md border-b border-[#DDE5DF] h-18 sm:h-20 flex items-center transition-colors w-full overflow-x-clip">
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
           {/* Left: Brand Logo & Subtitle */}

@@ -35,11 +35,16 @@ export async function GET(req: NextRequest) {
     const reporterUid = searchParams.get('reporterUid') || undefined;
     const search = searchParams.get('search') || undefined;
 
-    // Check optional auth for filtering citizen's own reports
-    const authHeader = req.headers.get('authorization');
-    if (reporterUid && authHeader) {
+    // Strict privacy protection: filtering by reporterUid requires authentication
+    if (reporterUid) {
       const auth = await authenticateRequest(req);
-      if (auth.user && !auth.user.isAdmin && auth.user.uid !== reporterUid) {
+      if (!auth.user) {
+        return NextResponse.json(
+          { error: 'Authentication required to inspect private citizen complaints.' },
+          { status: 401 }
+        );
+      }
+      if (!auth.user.isAdmin && auth.user.uid !== reporterUid) {
         return NextResponse.json(
           { error: 'Forbidden: You can only view your own complaints.' },
           { status: 403 }

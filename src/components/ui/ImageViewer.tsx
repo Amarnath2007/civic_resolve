@@ -98,7 +98,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
             />
 
             {/* Hover overlay hint */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-semibold">
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-semibold pointer-events-none">
               <Maximize2 className="w-4 h-4" />
               <span>Click to enlarge & inspect</span>
             </div>

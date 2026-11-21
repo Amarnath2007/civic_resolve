@@ -50,7 +50,7 @@ export const AiAssessmentCard: React.FC<AiAssessmentCardProps> = ({
               </span>
             </h3>
             <p className="text-xs text-[#63736F]">
-              Powered by Google Gemini 3.8 Flash
+              Powered by Google Gemini AI
             </p>
           </div>
         </div>

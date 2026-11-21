@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className="h-full antialiased overflow-x-hidden">
       <body className="min-h-full flex flex-col bg-[#F7F8F4] text-[#19364A] overflow-x-hidden">
         <AuthProvider>
           <Navbar />

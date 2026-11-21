@@ -111,7 +111,7 @@ export function runFallbackClassifier(input: TriageInput): TriageResult {
     ? input.selectedCategory
     : 'Other / Not Sure';
 
-  let breakdown: ScoreBreakdown = {
+  const breakdown: ScoreBreakdown = {
     severity: 5,
     publicImpact: 5,
     accessibilityRisk: 4,

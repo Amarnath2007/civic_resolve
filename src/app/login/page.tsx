@@ -55,8 +55,8 @@ export default function LoginPage() {
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
               type="button"
-              onClick={() => {
-                loginDemo('citizen');
+              onClick={async () => {
+                await loginDemo('citizen');
                 router.push('/my-reports');
               }}
               className="py-2 px-3 rounded-lg bg-white border border-[#DDE5DF] font-semibold text-[#19364A] hover:border-[#24796C] transition shadow-xs cursor-pointer text-center"
@@ -65,8 +65,8 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                loginDemo('admin');
+              onClick={async () => {
+                await loginDemo('admin');
                 router.push('/admin');
               }}
               className="py-2 px-3 rounded-lg bg-[#19364A] text-white font-semibold hover:bg-[#24796C] transition shadow-xs cursor-pointer text-center"

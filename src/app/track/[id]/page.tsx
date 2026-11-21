@@ -28,7 +28,7 @@ export default function TrackDetailPage() {
   const params = useParams();
   const idOrCode = params.id as string;
   const router = useRouter();
-  const { user, idToken } = useAuth();
+  const { user, idToken, loading: authLoading } = useAuth();
 
   const [report, setReport] = useState<Report | null>(null);
   const [updates, setUpdates] = useState<ComplaintUpdate[]>([]);
@@ -68,8 +68,10 @@ export default function TrackDetailPage() {
       }
     }
 
-    fetchReport();
-  }, [idOrCode, idToken]);
+    if (!authLoading) {
+      fetchReport();
+    }
+  }, [idOrCode, idToken, authLoading]);
 
   const handleSupport = async () => {
     if (!report) return;
