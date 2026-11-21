@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { dbService, toPublicReport } from '@/lib/db/store';
 import { authenticateRequest } from '@/lib/auth/serverAuth';
+import { generateSignedDeliveryUrl } from '@/lib/media/cloudinary';
 import { CivicCategory, CivicDepartment, PriorityLevel, ComplaintStatus } from '@/types';
-import { CIVIC_CATEGORIES, CIVIC_DEPARTMENTS, PRIORITY_LEVELS, COMPLAINT_STATUSES } from '@/lib/constants';
+import {
+  CIVIC_CATEGORIES,
+  CIVIC_DEPARTMENTS,
+  PRIORITY_LEVELS,
+  COMPLAINT_STATUSES,
+} from '@/lib/constants';
 
 const AdminUpdateSchema = z.object({
   status: z.enum(['Reported', 'Under Review', 'In Progress', 'Resolved']).optional(),
@@ -31,21 +37,34 @@ export async function GET(req: NextRequest, { params }: RouteProps) {
     const auth = await authenticateRequest(req);
     const user = auth.user;
 
-    const isOwner = user && user.uid === report.reporterUid;
-    const isAdmin = user && user.isAdmin;
+    const isOwner = Boolean(user && user.uid === report.reporterUid);
+    const isAdmin = Boolean(user && user.isAdmin);
 
-    // If caller is admin or the owner, return full record with updates
+    // If caller is admin or the owner: grant full record with authorized signed delivery URL
     if (isAdmin || isOwner) {
+      let authorizedImageUrl = report.imageUrl;
+
+      // If Cloudinary publicId exists, generate fresh temporary signed delivery URL
+      if (report.imageMetadata?.publicId) {
+        authorizedImageUrl = generateSignedDeliveryUrl(
+          report.imageMetadata.publicId,
+          report.imageMetadata.format
+        );
+      }
+
       return NextResponse.json({
         success: true,
-        report,
+        report: {
+          ...report,
+          imageUrl: authorizedImageUrl,
+        },
         updates,
         isOwner,
         isAdmin,
       });
     }
 
-    // If public sharing is enabled, return privacy-safe view
+    // If public sharing is enabled, return privacy-safe view (WITHOUT original photo)
     if (report.sharePublicly) {
       const publicView = toPublicReport(report, updates);
       return NextResponse.json({
@@ -63,7 +82,10 @@ export async function GET(req: NextRequest, { params }: RouteProps) {
     );
   } catch (error: any) {
     console.error('API GET /api/reports/[id] error:', error);
-    return NextResponse.json({ error: 'Failed to fetch report.', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch report.', details: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -106,7 +128,10 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
       updates.finalCategory = data.finalCategory;
     }
 
-    if (data.finalDepartment && CIVIC_DEPARTMENTS.includes(data.finalDepartment as CivicDepartment)) {
+    if (
+      data.finalDepartment &&
+      CIVIC_DEPARTMENTS.includes(data.finalDepartment as CivicDepartment)
+    ) {
       updates.finalDepartment = data.finalDepartment;
     }
 
@@ -136,6 +161,9 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
     });
   } catch (error: any) {
     console.error('API PATCH /api/reports/[id] error:', error);
-    return NextResponse.json({ error: 'Failed to update report.', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update report.', details: error.message },
+      { status: 500 }
+    );
   }
 }

@@ -1,15 +1,15 @@
 import { getApps, initializeApp, cert, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { getAuth, Auth } from 'firebase-admin/auth';
-import { getStorage, Storage } from 'firebase-admin/storage';
 
+// Free Spark Plan: Cloud Firestore and Firebase Authentication only.
+// Firebase Storage dependencies have been completely removed.
 let adminApp: App | null = null;
 let isFirebaseAdminInitialized = false;
 
 export function getFirebaseAdmin(): {
   isConfigured: boolean;
   firestore: Firestore | null;
-  storage: Storage | null;
   auth: Auth | null;
 } {
   const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -27,7 +27,6 @@ export function getFirebaseAdmin(): {
     return {
       isConfigured: false,
       firestore: null,
-      storage: null,
       auth: null,
     };
   }
@@ -41,7 +40,6 @@ export function getFirebaseAdmin(): {
           clientEmail,
           privateKey,
         }),
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
       });
       isFirebaseAdminInitialized = true;
     } catch (error) {
@@ -49,7 +47,6 @@ export function getFirebaseAdmin(): {
       return {
         isConfigured: false,
         firestore: null,
-        storage: null,
         auth: null,
       };
     }
@@ -60,7 +57,6 @@ export function getFirebaseAdmin(): {
   return {
     isConfigured: true,
     firestore: getFirestore(adminApp),
-    storage: getStorage(adminApp),
     auth: getAuth(adminApp),
   };
 }

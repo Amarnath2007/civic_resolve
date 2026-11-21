@@ -211,14 +211,11 @@ export default function NeighbourhoodPulsePage() {
                     {report.summary}
                   </p>
 
-                  {/* Photo thumbnail if available */}
-                  {report.imageUrl && (
-                    <div className="h-32 w-full rounded-lg overflow-hidden border border-[#DDE5DF] bg-slate-100">
-                      <img
-                        src={report.imageUrl}
-                        alt="Evidence thumbnail"
-                        className="w-full h-full object-cover"
-                      />
+                  {/* Privacy-safe AI visual inspection badge */}
+                  {report.imageObservations && report.imageObservations.length > 0 && (
+                    <div className="bg-[#E7F0EA] p-2.5 rounded-lg border border-[#24796C]/20 text-[11px] text-[#24796C] space-y-0.5">
+                      <span className="font-semibold block">AI Visual Evidence:</span>
+                      <span className="text-[#19364A] line-clamp-2">{report.imageObservations[0]}</span>
                     </div>
                   )}
                 </div>

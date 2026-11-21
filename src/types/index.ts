@@ -47,6 +47,15 @@ export interface ComplaintUpdate {
   createdAt: string;
 }
 
+export interface CloudinaryImageMetadata {
+  publicId: string;
+  assetId?: string;
+  resourceType: string;
+  format: string;
+  uploadedAt: string;
+  bytes?: number;
+}
+
 export interface Report {
   id: string;
   trackingCode: string;
@@ -69,8 +78,8 @@ export interface Report {
   recommendedAction?: string;
   scoreBreakdown: ScoreBreakdown;
   imageObservations: string[];
-  imageUrl?: string;
-  imageStoragePath?: string;
+  imageMetadata?: CloudinaryImageMetadata;
+  imageUrl?: string; // Signed temporary URL (only provided to authorized owner or admin)
   location: ReportLocation;
   status: ComplaintStatus;
   sharePublicly: boolean;
@@ -102,7 +111,6 @@ export interface PublicReport {
   status: ComplaintStatus;
   supportCount: number;
   createdAt: string;
-  imageUrl?: string;
   imageObservations?: string[];
   recentUpdate?: string;
   updates?: Array<{

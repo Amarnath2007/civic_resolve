@@ -33,6 +33,14 @@ export const INITIAL_DEMO_REPORTS: Report[] = [
       'Unpaved asphalt cavity with exposed aggregate ~15cm deep.',
       'Located within active vehicle transit lane near pedestrian crossing.',
     ],
+    imageMetadata: {
+      publicId: 'civicresolve_evidence/demo_cr_001_pothole',
+      assetId: 'asset_demo_001',
+      resourceType: 'image',
+      format: 'jpg',
+      uploadedAt: new Date(Date.now() - 36 * 3600 * 1000).toISOString(),
+      bytes: 184500,
+    },
     imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800&auto=format&fit=crop&q=80',
     location: {
       locality: 'Gandhipuram',

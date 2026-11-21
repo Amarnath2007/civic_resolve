@@ -68,6 +68,7 @@ describe('Data Store & Workflow Logic', () => {
     expect((pub as any).adminNotes).toBeUndefined();
     expect(pub.title).toBe(internalReport.title);
     expect(pub.summary).toBe(internalReport.aiSummary);
+    expect((pub as any).imageUrl).toBeUndefined();
     // Coordinates must be approximated
     expect(pub.approximateCoordinates?.latitude).toBe(11.019);
     expect(pub.approximateCoordinates?.longitude).toBe(76.963);

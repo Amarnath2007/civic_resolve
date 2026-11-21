@@ -131,7 +131,8 @@ export default function AdminDashboardPage() {
       if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
       const res = await fetch(`/api/reports/${rep.id}`, { headers });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.report) {
+        setSelectedReport(data.report);
         setReportUpdates(data.updates || []);
       }
     } catch (err) {

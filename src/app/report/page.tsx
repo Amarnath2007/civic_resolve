@@ -72,6 +72,11 @@ function ReportIssueContent() {
       return;
     }
 
+    if (!user) {
+      setImageError('Citizen authentication is required to upload evidence photographs. Please sign in or use the Demo Switcher in the top navigation bar.');
+      return;
+    }
+
     const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       setImageError('Please upload an image in JPEG, PNG, or WebP format.');

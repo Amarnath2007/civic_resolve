@@ -248,7 +248,6 @@ export function toPublicReport(report: Report, updates: ComplaintUpdate[] = []):
     status: report.status,
     supportCount: report.supportCount || 0,
     createdAt: report.createdAt,
-    imageUrl: report.imageUrl,
     imageObservations: report.imageObservations || [],
     recentUpdate: updates.length > 0 ? updates[updates.length - 1].note : undefined,
     updates: updates.map((u) => ({

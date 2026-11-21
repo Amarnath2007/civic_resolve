@@ -217,11 +217,16 @@ export default function TrackDetailPage() {
         </div>
 
         {/* Photographic Evidence if attached */}
-        {report.imageUrl && (
+        {report.imageUrl ? (
           <div className="border-t border-[#DDE5DF] pt-4 space-y-2">
-            <span className="text-xs font-bold text-[#19364A] uppercase tracking-wider block">
-              Photographic Evidence
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-[#19364A] uppercase tracking-wider block">
+                Photographic Evidence (Authorized Access)
+              </span>
+              <span className="text-[10px] text-[#24796C] font-semibold bg-[#E7F0EA] px-2 py-0.5 rounded">
+                Signed Temporary Delivery
+              </span>
+            </div>
             <div className="rounded-xl overflow-hidden border border-[#DDE5DF] bg-slate-50 max-h-80 flex items-center justify-center">
               <img
                 src={report.imageUrl}
@@ -230,7 +235,17 @@ export default function TrackDetailPage() {
               />
             </div>
           </div>
-        )}
+        ) : report.imageObservations && report.imageObservations.length > 0 ? (
+          <div className="border-t border-[#DDE5DF] pt-4 space-y-1.5 text-xs">
+            <span className="font-bold text-[#19364A] uppercase tracking-wider block">
+              Photographic Evidence
+            </span>
+            <p className="text-[#63736F] bg-[#F7F8F4] p-3 rounded-lg border border-[#DDE5DF]">
+              Original complaint photographs are protected and restricted to the verified report owner and authorized municipal staff.
+              AI visual inspection observations are available in the assessment card below.
+            </p>
+          </div>
+        ) : null}
 
         {/* Support this issue banner */}
         {report.sharePublicly && (

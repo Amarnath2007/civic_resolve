@@ -2,16 +2,18 @@
 
 Welcome to **CivicResolve**, the AI-Powered Citizen Grievance Management and Resolution Platform built for the PromptWars X GDG On Campus PSG iTech Challenge.
 
-This guide provides step-by-step instructions for configuring Firebase, Google Gemini AI, and launching the application in local and production environments.
+> [!NOTE]
+> **Firebase Spark (Free) Plan Compatible:** CivicResolve is engineered to run 100% on Firebase's free **Spark plan** without requiring billing or upgrading to the Blaze plan. Cloud Firestore and Firebase Authentication handle all database and auth operations, while the free tier of **Cloudinary** handles secure photograph storage via authenticated asset delivery.
 
 ---
 
 ## ⚡ Instant Evaluation (Zero-Config Demo Mode)
 
 CivicResolve is built with a **graceful fallback architecture**:
-If you run the application before configuring live Firebase or Gemini credentials:
+If you run the application before configuring live Firebase, Cloudinary, or Gemini credentials:
 - The system automatically loads a **realistic demonstration dataset** for **Coimbatore, Tamil Nadu**.
 - Deterministic fallback AI triage activates seamlessly if `GEMINI_API_KEY` is not yet set.
+- Text-only complaint reporting continues working smoothly even if Cloudinary is not configured.
 - One-click demo roles ("Demo Citizen" & "Demo Admin") in the navigation bar allow instant testing of the entire complaint lifecycle without creating accounts.
 
 ---
@@ -30,7 +32,7 @@ If you run the application before configuring live Firebase or Gemini credential
 2. Sign in with your Google account.
 3. Click **"Get API key"** and select or create a Google Cloud project.
 4. Copy the generated API key.
-5. In your project root, set this in your `.env.local`:
+5. In your project root, add to `.env.local`:
    ```env
    GEMINI_API_KEY=your_actual_gemini_api_key_here
    GEMINI_MODEL=gemini-3.8-flash
@@ -38,7 +40,9 @@ If you run the application before configuring live Firebase or Gemini credential
 
 ---
 
-## 3. Setting Up Firebase
+## 3. Setting Up Firebase (Free Spark Plan)
+
+No credit card or billing upgrade is required. Stay on the free Spark plan.
 
 ### A. Create a Firebase Project
 1. Open the [Firebase Console](https://console.firebase.google.com/).
@@ -57,12 +61,9 @@ If you run the application before configuring live Firebase or Gemini credential
 3. Select a database location closest to your users (e.g., `asia-south1` for India).
 4. Choose **Start in production mode** (or test mode for quick prototyping) and click **Enable**.
 
-### D. Enable Firebase Cloud Storage
-1. Navigate to **Build > Storage**.
-2. Click **"Get started"**.
-3. Select the default bucket location and click **Done**.
+*(Note: Do NOT enable Firebase Storage. Firebase Storage is not needed or used.)*
 
-### E. Obtain Client Configuration
+### D. Obtain Client Configuration
 1. Click the **Gear icon (Project settings)** in the top left sidebar.
 2. In the **General** tab, scroll to **Your apps** and click the **Web (</>) icon**.
 3. Register the app name (e.g. `CivicResolve Web`).
@@ -71,12 +72,11 @@ If you run the application before configuring live Firebase or Gemini credential
    NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=civicresolve.firebaseapp.com
    NEXT_PUBLIC_FIREBASE_PROJECT_ID=civicresolve
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=civicresolve.appspot.com
    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=1234567890
    NEXT_PUBLIC_FIREBASE_APP_ID=1:1234567890:web:...
    ```
 
-### F. Create Firebase Admin SDK Service Account
+### E. Create Firebase Admin SDK Service Account
 1. In Firebase Console, go to **Project settings > Service accounts**.
 2. Click **"Generate new private key"**, then confirm **"Generate key"**.
 3. A JSON file will download to your computer. Open it and extract:
@@ -93,7 +93,31 @@ If you run the application before configuring live Firebase or Gemini credential
 
 ---
 
-## 4. Configuring Administrator Access
+## 4. Setting Up Cloudinary (Free Plan)
+
+CivicResolve uses Cloudinary's generous free tier for secure, authenticated complaint evidence storage.
+
+1. Sign up for a free account at [Cloudinary](https://cloudinary.com/users/register_free).
+2. Once logged in, navigate to the **Dashboard** / **API Keys** section.
+3. You will find:
+   - **Cloud Name**
+   - **API Key**
+   - **API Secret**
+4. Add these server-side environment variables to `.env.local`:
+   ```env
+   CLOUDINARY_CLOUD_NAME=CivicResolve
+   CLOUDINARY_API_KEY=your_api_key_here
+   CLOUDINARY_API_SECRET=your_api_secret_here
+   ```
+5. **Security Details:**
+   - Uploaded complaint photographs are designated with `type: 'authenticated'` and random asset identifiers.
+   - Images are **never publicly browsable**.
+   - Temporary cryptographically signed delivery URLs are generated only when verified by the complaint owner or an authorized administrator.
+   - Original photographs are never exposed on public community feeds.
+
+---
+
+## 5. Configuring Administrator Access
 
 Administrators are verified server-side through the `ADMIN_EMAILS` environment variable.
 
@@ -106,7 +130,7 @@ Administrators are verified server-side through the `ADMIN_EMAILS` environment v
 
 ---
 
-## 5. Running the Application Locally
+## 6. Running the Application Locally
 
 1. Install dependencies:
    ```bash
@@ -127,47 +151,52 @@ Administrators are verified server-side through the `ADMIN_EMAILS` environment v
 
 ---
 
-## 6. Testing the Demonstration Workflow
+## 7. Testing the Demonstration Workflow
 
-1. **Citizen Reporting**:
+1. **Citizen Reporting with Photo**:
+   - Use the **Demo Switcher** to select **"Citizen (Priya Raman)"** or log in.
    - Open `/report`.
-   - Enter title: `Large crater pothole on 100 Feet Road`.
-   - Description (try English, Tamil, or Tanglish): `Road romba damaged ah iruku, two-wheeler riders fall down during night time.`
+   - Enter title: `Severe crater-like pothole near 100 Feet Road`.
+   - Description (in English or Tanglish): `Road romba damaged ah iruku, two-wheeler riders fall down during night time.`
    - Select locality: `Gandhipuram`.
-   - Click "Submit Complaint".
-   - Observe Gemini categorize the problem under **Roads & Potholes**, route to **Roads & Public Works**, and calculate an evidence-based priority score (e.g. 82/100, Critical).
+   - Upload a sample photograph (JPEG, PNG, or WebP $\le$ 5 MB).
+   - Toggle **"Share a privacy-safe summary in Neighbourhood Pulse"**.
+   - Click **"Submit Complaint"**.
+   - Observe Gemini analyze image bytes in memory, classify the issue under **Roads & Potholes**, assign it to **Roads & Public Works**, and calculate a transparent priority score (e.g. 82/100, Critical).
+   - The photo is securely saved to Cloudinary under authenticated delivery and only image metadata (public ID, asset ID, format, timestamp) is recorded in Firestore.
    - Copy the tracking code (e.g., `CR-2026-XXXX`).
 
-2. **Tracking Progress**:
-   - Navigate to `/track` and paste the tracking ID.
-   - Review the resolution timeline (Reported ➔ Under Review ➔ In Progress ➔ Resolved).
+2. **Text-Only Complaint Submission**:
+   - Submit another complaint on `/report` without attaching an image.
+   - Verify that text-only complaints succeed immediately, with full Gemini triage and priority scoring.
 
-3. **Administrator Triage & Resolution**:
-   - Click **Admin Portal** or use the **Demo Switcher** to switch to "Operations Desk".
+3. **Restricted Photo Access Verification**:
+   - As the report owner, visit `/track/[id]` and verify that the photo is displayed with a signed delivery badge.
+   - Open an incognito browser window or log out, then visit the public tracking page for that complaint.
+   - Notice that the original photograph is **not exposed**; only the objective AI visual observations are visible to public visitors.
+
+4. **Administrator Triage & Resolution (`/admin`)**:
+   - Use the **Demo Switcher** to select **"Operations Desk"** (or sign in as `admin@civicresolve.gov`).
    - Navigate to `/admin`.
-   - Locate the complaint in **All Reports** or the **Critical Alerts** queue.
-   - Click **Inspect**.
-   - Review AI observations and evidence scores.
-   - Update status to **In Progress** or **Resolved**.
-   - Enter a public progress note: `Field road crew patched pothole with cold-mix bitumen.`
-   - Click **Save Official Decision & Publish Update**.
+   - Locate your complaint in **All Reports** and click **"Inspect"**.
+   - Verify that the administrator can view the verified photographic evidence via the temporary signed delivery URL.
+   - Update the status to **"In Progress"** or **"Resolved"** and publish an official update.
 
-4. **Neighbourhood Pulse**:
+5. **Neighbourhood Pulse (`/issues`)**:
    - Visit `/issues`.
-   - Observe nearby related reports within a 150m radius.
-   - Click **Support This Issue** to increment the community counter (+1).
+   - Notice nearby related complaints within a 150m radius in Gandhipuram.
+   - Click **"Support This Issue"** to record community support (+1).
 
 ---
 
-## 7. Deploying to Vercel
+## 8. Deploying to Vercel
 
 1. Push your repository to GitHub.
 2. In the [Vercel Dashboard](https://vercel.com/new), import your GitHub repository.
-3. Under **Environment Variables**, add all keys from your `.env.local`:
-   - `GEMINI_API_KEY`
-   - `GEMINI_MODEL`
-   - `NEXT_PUBLIC_FIREBASE_*`
+3. Under **Environment Variables**, add the keys from your `.env.local`:
+   - `GEMINI_API_KEY`, `GEMINI_MODEL`
+   - `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`
    - `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
-   - `ADMIN_EMAILS`
-   - `DEFAULT_JURISDICTION`
+   - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+   - `ADMIN_EMAILS`, `DEFAULT_JURISDICTION`
 4. Deploy! The app builds cleanly using `npm run build`.

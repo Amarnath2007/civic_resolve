@@ -5,6 +5,8 @@
 
 CivicResolve is a modern, end-to-end civic technology platform designed to streamline municipal complaint reporting, automate grievance triage with Google Gemini AI, and empower communities through neighborhood-level issue clustering.
 
+> **Zero-Billing Architecture:** Fully compatible with the **Firebase Spark (Free) plan** without upgrading to Blaze. Cloud Firestore and Firebase Auth manage complaints and identity, while the free tier of **Cloudinary** securely stores photographic evidence using authenticated asset delivery.
+
 ---
 
 ## 1. Problem Statement
@@ -44,6 +46,7 @@ CivicResolve bridges the divide between citizens and municipal operations throug
 | **Urgency Grading** | Mathematical 5-factor weighted score (0–100) with justification | Arbitrary citizen self-rating |
 | **Department Routing** | Automated AI recommendation to controlled taxonomy | Manual citizen guessing |
 | **Community Clustering** | 150m Haversine proximity detection for recurring problems | Siloed, duplicate complaints |
+| **Secure Media Storage** | Authenticated Cloudinary delivery; signed temporary URLs | Unrestricted public asset URLs |
 | **AI Transparency** | Advisory decision support; humans retain final authority | Black-box or non-existent AI |
 | **Privacy Safeguards** | Zero personal data leakage on public feeds; coordinate rounding | Full reporter info often exposed |
 
@@ -53,7 +56,8 @@ CivicResolve bridges the divide between citizens and municipal operations throug
 
 CivicResolve integrates the official **`@google/genai`** SDK on the server:
 
-- **Interactions API & Multimodal Input:** Ingests the citizen's title, description, location context, and base64 photographic evidence.
+- **Interactions API & Multimodal Input:** Ingests the citizen's title, description, location context, and in-memory base64 photographic evidence.
+- **In-Memory Visual Processing:** Gemini receives image bytes directly in memory on the server—private image URLs are never made publicly accessible to allow analysis.
 - **Multilingual Tamil & Tanglish Processing:** Understands vernacular complaints such as *"Road romba damaged ah iruku, street light velicham illa"* and produces a concise, standardized English executive summary for administrators while preserving the original statement.
 - **Structured JSON Output:** Validated with **Zod** schema against a strictly controlled municipal taxonomy.
 - **Objective Photographic Observation:** Identifies only reasonably visible factual elements (e.g. *"Asphalt cavity ~15cm deep", "Overflowing green dumper bin"*), preventing hallucinated claims.
@@ -79,10 +83,11 @@ Mapped to transparent civic urgency tiers:
 
 - **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, Lucide React icons.
 - **Backend:** Next.js Server Route Handlers, Zod schema validation.
-- **Database & Auth:** Cloud Firestore, Firebase Authentication, Firebase Storage, and Firebase Admin SDK.
+- **Database & Auth:** Cloud Firestore & Firebase Authentication (Free Spark Plan), Firebase Admin SDK.
+- **Media & Evidence Storage:** Cloudinary (Free Tier) with authenticated delivery and signed temporary URLs.
 - **Resilience Layer:** In-memory fallback datastore pre-seeded with realistic Coimbatore data for instant offline evaluation.
 - **AI Engine:** Google Gemini (`gemini-3.8-flash`) via `@google/genai` SDK.
-- **Testing:** Vitest with 100% passing test coverage across 26 test cases.
+- **Testing:** Vitest with 100% passing test coverage across 33 test cases.
 - **Deployment:** Vercel-ready production runtime.
 
 ---
@@ -98,15 +103,19 @@ Mapped to transparent civic urgency tiers:
            ▼                                             ▼
 [ Protected Server Route Handlers ] <──> [ Firebase Admin SDK (Auth & Allowlist) ]
            │
-           ├─► [ Google Gemini 3.8 Flash (Multimodal & Multilingual Triage) ]
+           ├─► [ Google Gemini 3.8 Flash (Multimodal & Multilingual Triage in memory) ]
            │        │
            │        ▼ (Structured JSON & 5-Factor Scoring)
+           │
+           ├─► [ Cloudinary Secure Upload (type: 'authenticated') ]
+           │        │
+           │        ▼ (Metadata: publicId, assetId, format, timestamp)
            │
            ├─► [ Haversine Proximity Engine (150m Radius Clustering) ]
            │
            └─► [ Cloud Firestore / Unified Data Store ]
-                    ├── reports (Full internal records & audit logs)
-                    ├── publicReports (Privacy-safe community feed)
+                    ├── reports (Full internal records with Cloudinary metadata & audit logs)
+                    ├── publicReports (Privacy-safe community feed without photos)
                     └── reports/{id}/updates (Timeline milestones)
 ```
 
@@ -115,11 +124,12 @@ Mapped to transparent civic urgency tiers:
 ## 9. Complaint Lifecycle
 
 1. **Submission:** Citizen inputs title, multilingual description, optional photo, and GPS/landmark location.
-2. **AI Triage:** Gemini analyzes input, recommends category & department, computes 5-factor priority score, and generates an official tracking ID (e.g. `CR-2026-8491`).
-3. **Clustering:** System checks for unresolved reports of the same category within 150m for Neighbourhood Pulse.
-4. **Administrative Review:** Officer inspects AI advisory recommendations in the Command Center (`/admin`), modifies department or priority if needed, and updates status.
-5. **Field Action & Tracking:** Status transitions (`Reported` ➔ `Under Review` ➔ `In Progress` ➔ `Resolved`) publish timestamped progress notes to the public timeline.
-6. **Resolution:** Field unit finishes repair; administrator closes complaint with confirmation.
+2. **AI Triage:** Gemini analyzes input in memory, recommends category & department, computes 5-factor priority score, and generates an official tracking ID (e.g. `CR-2026-8491`).
+3. **Secure Photo Storage:** If attached, the photograph is uploaded to Cloudinary as an authenticated asset (`type: 'authenticated'`). Metadata is saved in Firestore; binary data is never stored in the database.
+4. **Clustering:** System checks for unresolved reports of the same category within 150m for Neighbourhood Pulse.
+5. **Administrative Review:** Officer inspects AI advisory recommendations in the Command Center (`/admin`), views the authorized evidence via a temporary signed delivery URL, modifies department or priority if needed, and updates status.
+6. **Field Action & Tracking:** Status transitions (`Reported` ➔ `Under Review` ➔ `In Progress` ➔ `Resolved`) publish timestamped progress notes to the public timeline.
+7. **Resolution:** Field unit finishes repair; administrator closes complaint with confirmation.
 
 ---
 
@@ -139,7 +149,8 @@ Mapped to transparent civic urgency tiers:
 - `aiSummary`, `aiReason`, `recommendedAction`: string
 - `scoreBreakdown`: `{ severity, publicImpact, accessibilityRisk, vulnerableLocationImpact, persistence }`
 - `imageObservations`: string[]
-- `imageUrl`: string
+- `imageMetadata`: `{ publicId, assetId, resourceType, format, uploadedAt, bytes }`
+- `imageUrl`: undefined (only generated as a temporary signed URL upon authorized request)
 - `location`: `{ locality, streetOrLandmark, latitude, longitude, jurisdiction }`
 - `status`: 'Reported' | 'Under Review' | 'In Progress' | 'Resolved'
 - `sharePublicly`: boolean
@@ -151,7 +162,7 @@ Mapped to transparent civic urgency tiers:
 - `createdAt`, `updatedAt`, `resolvedAt`: ISO timestamp
 
 ### `publicReports`
-Privacy-safe replica: strips `reporterUid`, `reporterEmail`, `adminNotes`, and rounds coordinates to ~110m resolution (3 decimals) to protect resident privacy.
+Privacy-safe replica: strips `reporterUid`, `reporterEmail`, `adminNotes`, original complaint photos (`imageUrl` omitted), and rounds coordinates to ~110m resolution (3 decimals) to protect resident privacy.
 
 ---
 
@@ -185,6 +196,10 @@ CivicResolve includes an automated test suite powered by Vitest covering:
 - Haversine distance & 150m proximity cluster detection
 - Multilingual keyword heuristics (Tamil / Tanglish) & fallback classifier
 - Gemini structured JSON schema validation with Zod
+- Cloudinary mime type validation, 5MB threshold, authenticated upload, and signed URL generation
+- Authenticated photograph upload enforcement (rejects unauthenticated upload with 401)
+- Text-only complaint reporting preservation
+- Image access restriction (only owner and admin receive signed URLs)
 - Privacy sanitization of public reports
 - Prevention of duplicate community support votes
 - Administrative authorization & status transition enforcement
@@ -193,13 +208,13 @@ Run tests with:
 ```bash
 npm test
 ```
-Result: **5 test files, 26 tests passed (100% success)**.
+Result: **6 test files, 33 tests passed (100% success)**.
 
 ---
 
 ## 13. Getting Started
 
-Refer to [SETUP.md](./SETUP.md) for detailed step-by-step configuration of Firebase and Google AI Studio credentials.
+Refer to [SETUP.md](./SETUP.md) for detailed step-by-step configuration of Firebase (Spark Plan), Cloudinary (Free Tier), and Google AI Studio credentials.
 
 ```bash
 # 1. Install dependencies
@@ -223,7 +238,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - **Advisory AI Role:** Google Gemini provides advisory decision support. It is not presented as an official government authority, and human municipal administrators maintain final decision-making control over all routing and remediation.
 - **Prototype Status:** CivicResolve is a civic technology prototype engineered for the PromptWars X GDG On Campus Challenge and is not connected to a live municipal ERP or dispatch system.
-- **Public Privacy Safeguards:** Citizen identities are protected by default; public community sharing requires explicit opt-in and scrubs reporter metadata.
+- **Public Privacy Safeguards:** Citizen identities and original photographs are protected by default; public community sharing requires explicit opt-in and scrubs reporter metadata and photos.
 
 ---
 

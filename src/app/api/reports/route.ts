@@ -4,6 +4,11 @@ import { dbService, generateTrackingCode } from '@/lib/db/store';
 import { triageComplaint } from '@/lib/ai/gemini';
 import { authenticateRequest } from '@/lib/auth/serverAuth';
 import { findNearbyRelatedReports } from '@/lib/geo';
+import {
+  uploadComplaintEvidence,
+  validateImageUpload,
+  generateSignedDeliveryUrl,
+} from '@/lib/media/cloudinary';
 import { CivicCategory, Report } from '@/types';
 import { CIVIC_CATEGORIES, DEFAULT_JURISDICTION } from '@/lib/constants';
 
@@ -85,11 +90,28 @@ export async function POST(req: NextRequest) {
     let reporterEmail: string | undefined;
 
     const authHeader = req.headers.get('authorization');
-    if (authHeader) {
-      const auth = await authenticateRequest(req);
-      if (auth.user) {
-        reporterUid = auth.user.uid;
-        reporterEmail = auth.user.email;
+    const auth = authHeader ? await authenticateRequest(req) : null;
+    if (auth?.user) {
+      reporterUid = auth.user.uid;
+      reporterEmail = auth.user.email;
+    }
+
+    // Secure upload requirement: citizen must be authenticated before uploading photograph
+    if (data.imageBase64 && !auth?.user) {
+      return NextResponse.json(
+        {
+          error:
+            'Authentication required. Please sign in as a citizen before uploading photograph evidence.',
+        },
+        { status: 401 }
+      );
+    }
+
+    // Validate image format and size
+    if (data.imageBase64) {
+      const validation = validateImageUpload(data.imageBase64, data.imageMimeType);
+      if (!validation.valid) {
+        return NextResponse.json({ error: validation.error }, { status: 422 });
       }
     }
 
@@ -99,7 +121,7 @@ export async function POST(req: NextRequest) {
       ? (data.category as CivicCategory)
       : 'Other / Not Sure';
 
-    // Execute Gemini AI triage (or fallback classifier)
+    // Execute Gemini AI triage: pass in-memory image bytes securely to Gemini
     const triage = await triageComplaint({
       title: data.title,
       description: data.description,
@@ -111,6 +133,26 @@ export async function POST(req: NextRequest) {
       imageBuffer: data.imageBase64,
       imageMimeType: data.imageMimeType,
     });
+
+    // Securely upload complaint image to Cloudinary (authenticated asset delivery)
+    let imageMetadata;
+    let signedImageUrl: string | undefined;
+
+    if (data.imageBase64) {
+      try {
+        imageMetadata = await uploadComplaintEvidence(data.imageBase64, data.imageMimeType);
+        // Generate temporary signed delivery URL for immediate confirmation response
+        if (imageMetadata.publicId) {
+          signedImageUrl = generateSignedDeliveryUrl(
+            imageMetadata.publicId,
+            imageMetadata.format
+          );
+        }
+      } catch (uploadErr: any) {
+        console.error('Cloudinary evidence upload error:', uploadErr);
+        // Do not fail entire complaint if Cloudinary is temporarily unreachable
+      }
+    }
 
     // Check for nearby related reports for Neighbourhood Pulse
     const allExisting = await dbService.getReports();
@@ -130,6 +172,8 @@ export async function POST(req: NextRequest) {
     const id = `cr-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const trackingCode = generateTrackingCode();
 
+    // Store report in Firestore / database.
+    // NEVER store image binary data or base64 strings in Firestore!
     const newReport: Report = {
       id,
       trackingCode,
@@ -152,9 +196,8 @@ export async function POST(req: NextRequest) {
       recommendedAction: triage.recommendedAction,
       scoreBreakdown: triage.scoreBreakdown,
       imageObservations: triage.imageObservations,
-      imageUrl: data.imageBase64
-        ? `data:${data.imageMimeType || 'image/jpeg'};base64,${data.imageBase64}`
-        : undefined,
+      imageMetadata, // Cloudinary publicId, assetId, resourceType, format, uploadedAt
+      imageUrl: undefined, // Stripped from persistent DB storage
       location: {
         locality: data.locality,
         streetOrLandmark: data.streetOrLandmark,
@@ -177,11 +220,17 @@ export async function POST(req: NextRequest) {
 
     const savedReport = await dbService.createReport(newReport);
 
+    // Attach signedImageUrl only to the direct response for the submitting citizen
+    const responseReport = {
+      ...savedReport,
+      imageUrl: signedImageUrl,
+    };
+
     return NextResponse.json(
       {
         success: true,
         message: 'Your report has been successfully submitted.',
-        report: savedReport,
+        report: responseReport,
         triageSummary: {
           trackingCode: savedReport.trackingCode,
           suggestedCategory: savedReport.finalCategory,
@@ -192,6 +241,7 @@ export async function POST(req: NextRequest) {
           submissionDate: savedReport.createdAt,
           triageMethod: savedReport.triageMethod,
           nearbyRelatedCount: relatedReportIds.length,
+          hasPhotoEvidence: Boolean(imageMetadata),
         },
       },
       { status: 201 }
