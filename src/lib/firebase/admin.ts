@@ -17,6 +17,9 @@ export function getFirebaseAdmin(): {
   let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
   if (privateKey) {
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1);
+    }
     // Correctly handle escaped newlines when stored in environment variables
     privateKey = privateKey.replace(/\\n/g, '\n');
   }
@@ -54,9 +57,16 @@ export function getFirebaseAdmin(): {
     adminApp = apps[0];
   }
 
+  const firestore = getFirestore(adminApp);
+  try {
+    firestore.settings({ ignoreUndefinedProperties: true });
+  } catch {
+    // Settings already applied
+  }
+
   return {
     isConfigured: true,
-    firestore: getFirestore(adminApp),
+    firestore,
     auth: getAuth(adminApp),
   };
 }

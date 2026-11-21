@@ -2,9 +2,15 @@
 
 import React from 'react';
 import NextLink from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Building2, ShieldCheck, Heart, MapPin, Sparkles } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+  const pathname = usePathname();
+  // If inside the Admin Portal, omit the citizen footer
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
   return (
     <footer className="bg-[#19364A] text-white border-t border-[#DDE5DF] mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

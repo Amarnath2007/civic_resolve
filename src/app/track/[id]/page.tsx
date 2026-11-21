@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { TimelineView } from '@/components/ui/TimelineView';
 import { PriorityScoreCard } from '@/components/ui/PriorityScoreCard';
 import { AiAssessmentCard } from '@/components/ui/AiAssessmentCard';
+import { ImageViewer } from '@/components/ui/ImageViewer';
 import { Report, ComplaintUpdate } from '@/types';
 import {
   ArrowLeft,
@@ -224,16 +225,16 @@ export default function TrackDetailPage() {
                 Photographic Evidence (Authorized Access)
               </span>
               <span className="text-[10px] text-[#24796C] font-semibold bg-[#E7F0EA] px-2 py-0.5 rounded">
-                Signed Temporary Delivery
+                Cloudinary Signed Temporary Delivery
               </span>
             </div>
-            <div className="rounded-xl overflow-hidden border border-[#DDE5DF] bg-slate-50 max-h-80 flex items-center justify-center">
-              <img
-                src={report.imageUrl}
-                alt="Complaint Evidence"
-                className="max-h-80 w-full object-contain"
-              />
-            </div>
+            <ImageViewer
+              src={report.imageUrl}
+              alt={report.title}
+              observations={report.imageObservations}
+              caption={`${report.trackingCode}: ${report.title}`}
+              isAuthorized={true}
+            />
           </div>
         ) : report.imageObservations && report.imageObservations.length > 0 ? (
           <div className="border-t border-[#DDE5DF] pt-4 space-y-1.5 text-xs">

@@ -1,5 +1,6 @@
 import React from 'react';
 import NextLink from 'next/link';
+import Image from 'next/image';
 import {
   Building2,
   ArrowRight,
@@ -18,11 +19,12 @@ import {
   Car,
   HelpCircle,
   ThumbsUp,
+  FileText,
+  Activity,
 } from 'lucide-react';
 import { dbService } from '@/lib/db/store';
 import { PriorityBadge } from '@/components/ui/PriorityBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { CATEGORY_DESCRIPTIONS } from '@/lib/constants';
 
 export default async function HomePage() {
   const stats = await dbService.getDashboardStats();
@@ -69,32 +71,36 @@ export default async function HomePage() {
   ];
 
   return (
-    <div className="space-y-16 sm:space-y-24 pb-20">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-b from-[#E7F0EA]/50 to-[#F7F8F4] border-b border-[#DDE5DF] pt-12 pb-16 lg:pt-20 lg:pb-24">
+    <div className="space-y-12 sm:space-y-16 lg:space-y-20 pb-20">
+      {/* 1. Hero Section: Clean Two-Column Layout */}
+      <section className="bg-gradient-to-b from-[#E7F0EA]/40 via-[#F7F8F4] to-[#F7F8F4] border-b border-[#DDE5DF] pt-8 pb-12 sm:pt-12 sm:pb-16 lg:pt-16 lg:pb-18">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Copy */}
-            <div className="lg:col-span-7 space-y-6 text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#E7F0EA] border border-[#24796C]/20 text-[#24796C] text-xs font-semibold">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Next-Generation Municipal Grievance Triage</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Left Column: Heading, Context, Actions, Trust */}
+            <div className="lg:col-span-6 xl:col-span-6 space-y-6 text-left">
+              {/* Introductory Badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#E7F0EA] border border-[#24796C]/25 text-[#24796C] text-[11px] sm:text-xs font-semibold shadow-2xs max-w-full">
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate sm:overflow-visible">Next-Generation Municipal Grievance Triage</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#19364A] tracking-tight leading-[1.15]">
+              {/* Main Headline */}
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[2.75rem] xl:text-[3.25rem] font-extrabold text-[#19364A] tracking-tight leading-[1.15] hyphens-none break-normal">
                 Your city. Your voice. <br className="hidden sm:inline" />
-                <span className="text-[#24796C]">A better tomorrow.</span>
+                <span className="text-[#24796C] inline-block">A better tomorrow.</span>
               </h1>
 
-              <p className="text-base sm:text-lg text-[#63736F] max-w-2xl leading-relaxed">
-                Report civic issues, help your community and follow every complaint from
-                submission to resolution. Together, we can make our neighbourhoods better.
+              {/* Supporting Text */}
+              <p className="text-base sm:text-lg text-[#63736F] max-w-xl leading-relaxed">
+                Report civic issues, help your community and follow every complaint from submission
+                to resolution. Together, we can make our neighbourhoods better.
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 pt-2">
+              {/* Primary & Secondary CTA Buttons */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                 <NextLink
                   href="/report"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 text-sm sm:text-base font-semibold text-white bg-[#24796C] hover:bg-[#19364A] rounded-xl shadow-md transition-all hover:scale-[1.02] cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm sm:text-base font-semibold text-white bg-[#24796C] hover:bg-[#19364A] rounded-xl shadow-md hover:shadow-lg transition-all hover:scale-[1.01] cursor-pointer whitespace-nowrap"
                 >
                   <span>Report an Issue</span>
                   <ArrowRight className="w-4 h-4" />
@@ -102,99 +108,43 @@ export default async function HomePage() {
 
                 <NextLink
                   href="/track"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 text-sm sm:text-base font-semibold text-[#19364A] bg-white border border-[#DDE5DF] hover:border-[#24796C] hover:bg-[#F7F8F4] rounded-xl shadow-sm transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 text-sm sm:text-base font-semibold text-[#19364A] bg-white border border-[#DDE5DF] hover:border-[#24796C] hover:bg-[#F7F8F4] rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
                 >
                   <Search className="w-4 h-4 text-[#24796C]" />
                   <span>Track a Complaint</span>
                 </NextLink>
               </div>
 
-              {/* Trust signals */}
-              <div className="flex flex-wrap items-center gap-6 pt-4 text-xs text-[#63736F] border-t border-[#DDE5DF]">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#24796C]" />
+              {/* Three Small Trust Indicators */}
+              <div className="flex flex-wrap items-center gap-x-4 sm:gap-x-5 gap-y-2 pt-4 text-xs font-medium text-[#63736F] border-t border-[#DDE5DF]">
+                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  <CheckCircle2 className="w-4 h-4 text-[#24796C] shrink-0" />
                   <span>Verified Tracking IDs</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#24796C]" />
+                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  <ShieldCheck className="w-4 h-4 text-[#24796C] shrink-0" />
                   <span>Human-Governed Decisions</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-[#24796C]" />
+                <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  <MapPin className="w-4 h-4 text-[#24796C] shrink-0" />
                   <span>Neighbourhood Geolocation</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Civic Illustration Card */}
-            <div className="lg:col-span-5">
-              <div className="relative mx-auto max-w-md bg-white rounded-2xl border border-[#DDE5DF] p-6 shadow-xl space-y-5">
-                <div className="flex items-center justify-between border-b border-[#DDE5DF] pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[#C85C55]" />
-                    <div className="w-3 h-3 rounded-full bg-[#D99A42]" />
-                    <div className="w-3 h-3 rounded-full bg-[#24796C]" />
-                  </div>
-                  <span className="text-xs font-semibold text-[#63736F]">
-                    Live Citizen Resolution Flow
-                  </span>
-                </div>
-
-                {/* Friendly SVG Scene */}
-                <div className="bg-[#F7F8F4] rounded-xl p-4 border border-[#DDE5DF] text-center space-y-3">
-                  <svg
-                    viewBox="0 0 320 180"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="w-full h-auto max-h-44 mx-auto"
-                  >
-                    {/* Background City Silhouette */}
-                    <rect x="20" y="70" width="35" height="90" rx="3" fill="#E7F0EA" />
-                    <rect x="65" y="50" width="45" height="110" rx="3" fill="#DDE5DF" />
-                    <rect x="120" y="80" width="40" height="80" rx="3" fill="#E7F0EA" />
-                    <rect x="170" y="60" width="50" height="100" rx="3" fill="#DDE5DF" />
-                    <rect x="230" y="75" width="40" height="85" rx="3" fill="#E7F0EA" />
-
-                    {/* Streetline */}
-                    <rect x="10" y="150" width="300" height="8" rx="4" fill="#19364A" />
-                    <line x1="30" y1="154" x2="60" y2="154" stroke="#FFFFFF" strokeWidth="2" strokeDasharray="4 4" />
-                    <line x1="90" y1="154" x2="140" y2="154" stroke="#FFFFFF" strokeWidth="2" strokeDasharray="4 4" />
-                    <line x1="170" y1="154" x2="220" y2="154" stroke="#FFFFFF" strokeWidth="2" strokeDasharray="4 4" />
-                    <line x1="250" y1="154" x2="290" y2="154" stroke="#FFFFFF" strokeWidth="2" strokeDasharray="4 4" />
-
-                    {/* Streetlight */}
-                    <path d="M260 150 V95 C260 90 250 88 245 88" stroke="#63736F" strokeWidth="4" strokeLinecap="round" />
-                    <circle cx="243" cy="92" r="5" fill="#D99A42" />
-
-                    {/* Resident Figure with Mobile Phone */}
-                    <circle cx="85" cy="115" r="9" fill="#19364A" />
-                    <path d="M85 124 V148" stroke="#19364A" strokeWidth="6" strokeLinecap="round" />
-                    <path d="M78 132 L95 130" stroke="#19364A" strokeWidth="3" strokeLinecap="round" />
-                    {/* Smartphone */}
-                    <rect x="94" y="122" width="9" height="16" rx="2" fill="#24796C" />
-                    <circle cx="98.5" cy="126" r="1.5" fill="#FFFFFF" />
-
-                    {/* Speech / Report Pin Bubble */}
-                    <g transform="translate(108, 102)">
-                      <rect x="0" y="0" width="85" height="30" rx="6" fill="#24796C" />
-                      <polygon points="0,15 -6,20 0,22" fill="#24796C" />
-                      <text x="8" y="14" fill="#FFFFFF" fontSize="8" fontWeight="bold">Civic Issue</text>
-                      <text x="8" y="24" fill="#E7F0EA" fontSize="7">Triaged & Geotagged</text>
-                    </g>
-                  </svg>
-
-                  <p className="text-xs text-[#19364A] font-medium">
-                    A resident snapping a photo of road damage in Gandhipuram, Coimbatore
-                  </p>
-                </div>
-
-                {/* Instant Assessment Snapshot */}
-                <div className="bg-[#E7F0EA] p-3 rounded-xl border border-[#24796C]/20 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-[#24796C]" />
-                    <span className="font-semibold text-[#19364A]">Gemini AI Triage Engine</span>
-                  </div>
-                  <span className="text-[#24796C] font-mono font-bold">Priority: 82/100</span>
+            {/* Right Column: Prominent Hero Image (hero.png) */}
+            <div className="lg:col-span-6 xl:col-span-6 flex justify-center lg:justify-end">
+              <div className="w-full max-w-lg lg:max-w-none">
+                <div className="overflow-hidden rounded-[22px] border border-[#DDE5DF] shadow-lg shadow-black/5 bg-white transition-all">
+                  <Image
+                    src="/hero.png"
+                    alt="Resident reporting a road pothole using the CivicResolve smartphone app"
+                    width={1536}
+                    height={1024}
+                    priority
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 600px"
+                    className="w-full h-auto object-cover block"
+                  />
                 </div>
               </div>
             </div>
@@ -202,62 +152,95 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Real Statistics Section */}
+      {/* 2. Real Statistics Section: Consistent One-Row Layout on Desktop */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <div className="bg-white rounded-xl border border-[#DDE5DF] p-6 shadow-sm">
-            <span className="text-xs font-semibold text-[#63736F] uppercase tracking-wider block">
-              Total Reports
-            </span>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#19364A] mt-2">
-              {stats.totalComplaints}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
+          {/* Card 1: Total Reports */}
+          <div className="bg-white rounded-2xl border border-[#DDE5DF] p-5 sm:p-6 shadow-xs hover:border-[#24796C]/40 transition-colors h-full flex flex-col justify-between space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[#63736F] uppercase tracking-wider block">
+                Total Reports
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-[#E7F0EA] text-[#24796C] flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4" />
+              </div>
             </div>
-            <p className="text-xs text-[#63736F] mt-1">Submitted by verified citizens</p>
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#19364A] tracking-tight">
+                {stats.totalComplaints}
+              </div>
+              <p className="text-xs text-[#63736F] mt-1.5">Submitted by verified citizens</p>
+            </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#DDE5DF] p-6 shadow-sm">
-            <span className="text-xs font-semibold text-[#63736F] uppercase tracking-wider block">
-              In Remediation
-            </span>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#D99A42] mt-2">
-              {stats.inProgress + stats.underReview}
+          {/* Card 2: In Remediation */}
+          <div className="bg-white rounded-2xl border border-[#DDE5DF] p-5 sm:p-6 shadow-xs hover:border-[#D99A42]/40 transition-colors h-full flex flex-col justify-between space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[#63736F] uppercase tracking-wider block">
+                In Remediation
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-amber-50 text-[#D99A42] flex items-center justify-center shrink-0">
+                <Clock className="w-4 h-4" />
+              </div>
             </div>
-            <p className="text-xs text-[#63736F] mt-1">Under active field review</p>
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#D99A42] tracking-tight">
+                {stats.inProgress + stats.underReview}
+              </div>
+              <p className="text-xs text-[#63736F] mt-1.5">Under active field review</p>
+            </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#DDE5DF] p-6 shadow-sm">
-            <span className="text-xs font-semibold text-[#63736F] uppercase tracking-wider block">
-              Resolved
-            </span>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#24796C] mt-2">
-              {stats.resolved}
+          {/* Card 3: Resolved */}
+          <div className="bg-white rounded-2xl border border-[#DDE5DF] p-5 sm:p-6 shadow-xs hover:border-[#24796C]/40 transition-colors h-full flex flex-col justify-between space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[#63736F] uppercase tracking-wider block">
+                Resolved
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#24796C] flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
             </div>
-            <p className="text-xs text-[#63736F] mt-1">Inspected and closed</p>
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#24796C] tracking-tight">
+                {stats.resolved}
+              </div>
+              <p className="text-xs text-[#63736F] mt-1.5">Inspected and successfully closed</p>
+            </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#DDE5DF] p-6 shadow-sm">
-            <span className="text-xs font-semibold text-[#63736F] uppercase tracking-wider block">
-              High / Critical
-            </span>
-            <div className="text-3xl sm:text-4xl font-extrabold text-[#C85C55] mt-2">
-              {stats.criticalPriority + stats.highPriority}
+          {/* Card 4: Urgent & Critical */}
+          <div className="bg-white rounded-2xl border border-[#DDE5DF] p-5 sm:p-6 shadow-xs hover:border-[#C85C55]/40 transition-colors h-full flex flex-col justify-between space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[#63736F] uppercase tracking-wider block">
+                High / Critical
+              </span>
+              <div className="w-9 h-9 rounded-xl bg-rose-50 text-[#C85C55] flex items-center justify-center shrink-0">
+                <AlertCircle className="w-4 h-4" />
+              </div>
             </div>
-            <p className="text-xs text-[#63736F] mt-1">Urgent public safety alerts</p>
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold text-[#C85C55] tracking-tight">
+                {stats.criticalPriority + stats.highPriority}
+              </div>
+              <p className="text-xs text-[#63736F] mt-1.5">Urgent public safety alerts</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Civic Categories Grid */}
+      {/* 3. Civic Categories Grid */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <span className="text-xs font-semibold text-[#24796C] uppercase tracking-wider">
             Municipal Scope
           </span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#19364A]">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#19364A] tracking-tight">
             Report Any Neighbourhood Concern
           </h2>
           <p className="text-sm text-[#63736F]">
-            Select a category to jump directly into the reporting form, or let Gemini AI recommend the right department automatically.
+            Select a category to jump directly into the reporting form, or let Gemini AI recommend the
+            right department automatically.
           </p>
         </div>
 
@@ -266,7 +249,7 @@ export default async function HomePage() {
             <NextLink
               key={idx}
               href={cat.href}
-              className="group bg-white rounded-xl border border-[#DDE5DF] p-6 hover:border-[#24796C] hover:shadow-md transition-all space-y-3 cursor-pointer"
+              className="group bg-white rounded-2xl border border-[#DDE5DF] p-6 hover:border-[#24796C] hover:shadow-md transition-all space-y-3 cursor-pointer"
             >
               <div className="w-12 h-12 rounded-xl bg-[#E7F0EA] flex items-center justify-center group-hover:bg-[#24796C] group-hover:text-white transition-colors">
                 {cat.icon}
@@ -284,14 +267,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* 4. How It Works */}
       <section className="bg-white border-y border-[#DDE5DF] py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-2">
             <span className="text-xs font-semibold text-[#24796C] uppercase tracking-wider">
               Transparent Operations
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#19364A]">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#19364A] tracking-tight">
               How CivicResolve Works
             </h2>
             <p className="text-sm text-[#63736F]">
@@ -300,7 +283,7 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-[#F7F8F4] rounded-xl border border-[#DDE5DF] p-6 space-y-3">
+            <div className="bg-[#F7F8F4] rounded-2xl border border-[#DDE5DF] p-6 space-y-3">
               <span className="text-3xl font-extrabold text-[#24796C] block font-mono">01</span>
               <h3 className="text-base font-bold text-[#19364A]">Report the Issue</h3>
               <p className="text-xs text-[#63736F] leading-relaxed">
@@ -309,28 +292,28 @@ export default async function HomePage() {
               </p>
             </div>
 
-            <div className="bg-[#F7F8F4] rounded-xl border border-[#DDE5DF] p-6 space-y-3">
+            <div className="bg-[#F7F8F4] rounded-2xl border border-[#DDE5DF] p-6 space-y-3">
               <span className="text-3xl font-extrabold text-[#24796C] block font-mono">02</span>
               <h3 className="text-base font-bold text-[#19364A]">Get It to the Right Team</h3>
               <p className="text-xs text-[#63736F] leading-relaxed">
-                Gemini AI performs multimodal triage, predicts responsible departments, and
-                computes a transparent 5-factor priority score.
+                Gemini AI performs multimodal triage, predicts responsible departments, and computes
+                a transparent 5-factor priority score.
               </p>
             </div>
 
-            <div className="bg-[#F7F8F4] rounded-xl border border-[#DDE5DF] p-6 space-y-3">
+            <div className="bg-[#F7F8F4] rounded-2xl border border-[#DDE5DF] p-6 space-y-3">
               <span className="text-3xl font-extrabold text-[#24796C] block font-mono">03</span>
               <h3 className="text-base font-bold text-[#19364A]">Track the Progress</h3>
               <p className="text-xs text-[#63736F] leading-relaxed">
-                Receive a tracking ID (e.g. CR-2026-8491) and follow field inspection, crew assignment,
-                and resolution updates in real time.
+                Receive a tracking ID (e.g. CR-2026-8491) and follow field inspection, crew
+                assignment, and resolution updates in real time.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Neighbourhood Pulse Live Preview */}
+      {/* 5. Neighbourhood Pulse Live Preview */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#DDE5DF] pb-4">
           <div className="space-y-1">
@@ -340,11 +323,12 @@ export default async function HomePage() {
                 Neighbourhood Pulse
               </span>
             </div>
-            <h2 className="text-2xl font-extrabold text-[#19364A]">
+            <h2 className="text-2xl font-extrabold text-[#19364A] tracking-tight">
               Recent Public Neighbourhood Reports
             </h2>
             <p className="text-xs text-[#63736F]">
-              Privacy-safe issues submitted and supported by fellow residents across the pilot jurisdiction.
+              Privacy-safe issues submitted and supported by fellow residents across the pilot
+              jurisdiction.
             </p>
           </div>
 
@@ -358,7 +342,7 @@ export default async function HomePage() {
         </div>
 
         {recentReports.length === 0 ? (
-          <div className="bg-white rounded-xl border border-[#DDE5DF] p-8 text-center text-[#63736F]">
+          <div className="bg-white rounded-2xl border border-[#DDE5DF] p-8 text-center text-[#63736F]">
             No public reports currently available. Be the first to report an issue in your area!
           </div>
         ) : (
@@ -366,7 +350,7 @@ export default async function HomePage() {
             {recentReports.map((report) => (
               <div
                 key={report.id}
-                className="bg-white rounded-xl border border-[#DDE5DF] p-5 shadow-sm space-y-4 flex flex-col justify-between hover:border-[#24796C] transition"
+                className="bg-white rounded-2xl border border-[#DDE5DF] p-5 shadow-xs space-y-4 flex flex-col justify-between hover:border-[#24796C] transition"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2">

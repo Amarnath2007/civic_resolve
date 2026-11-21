@@ -5,6 +5,7 @@ import { GET as getReportByIdApi, PATCH as patchReportApi } from '@/app/api/repo
 import { GET as getImageSignedUrlApi } from '@/app/api/reports/[id]/image/route';
 import { POST as supportReportApi } from '@/app/api/reports/[id]/support/route';
 import { GET as getPublicReportsApi } from '@/app/api/reports/public/route';
+import { GET as healthApi } from '@/app/api/health/route';
 import { dbService } from '@/lib/db/store';
 
 describe('End-to-End API Routes', () => {
@@ -223,5 +224,24 @@ describe('End-to-End API Routes', () => {
     });
 
     expect(res.status).toBe(401);
+  });
+
+  it('GET /api/health returns health diagnostics without leaking secrets', async () => {
+    const res = await healthApi();
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty('status');
+    expect(json).toHaveProperty('services');
+    expect(json.services).toHaveProperty('firebaseAuthentication');
+    expect(json.services).toHaveProperty('firebaseAdmin');
+    expect(json.services).toHaveProperty('firestore');
+    expect(json.services).toHaveProperty('geminiAPI');
+    expect(json.services).toHaveProperty('cloudinary');
+    expect(json.storagePolicy.firebaseStorageUsed).toBe(false);
+
+    // Verify zero credentials exposed in output
+    const serialized = JSON.stringify(json);
+    expect(serialized).not.toContain('AIzaSy');
+    expect(serialized).not.toContain('-----BEGIN PRIVATE KEY-----');
   });
 });

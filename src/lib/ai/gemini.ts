@@ -197,7 +197,7 @@ export async function triageComplaint(input: TriageInput): Promise<TriageResult>
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+    const modelName = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 
     const promptText = `
 You are an expert AI civic triage assistant for CivicResolve, an AI-powered municipal grievance management platform.
@@ -276,14 +276,46 @@ Return ONLY a valid JSON object matching this schema:
 
     contents.push({ text: promptText });
 
-    const response = await ai.models.generateContent({
-      model: modelName,
-      contents,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.1, // low temperature for deterministic evaluation
-      },
-    });
+    const modelCandidates = [
+      modelName,
+      'gemini-3.1-flash-lite',
+      'gemini-3.7-flash',
+      'gemini-3.5-flash',
+    ].filter((m, idx, arr) => arr.indexOf(m) === idx);
+
+    let response: any = null;
+    let lastError: any = null;
+
+    for (const currentModel of modelCandidates) {
+      try {
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Timeout calling Gemini model ${currentModel}`)), 10000)
+        );
+
+        const apiPromise = ai.models.generateContent({
+          model: currentModel,
+          contents,
+          config: {
+            responseMimeType: 'application/json',
+            temperature: 0.1, // low temperature for deterministic evaluation
+          },
+        });
+
+        response = await Promise.race([apiPromise, timeoutPromise]);
+        if (response && response.text) {
+          break;
+        }
+      } catch (modelErr: any) {
+        lastError = modelErr;
+        console.warn(`Model ${currentModel} error (${modelErr?.status || modelErr?.message}), attempting next candidate.`);
+        continue;
+      }
+    }
+
+    if (!response || !response.text) {
+      if (lastError) throw lastError;
+      return runFallbackClassifier(input);
+    }
 
     const responseText = response.text || '';
     const cleanedText = responseText.replace(/```json\n?|\n?```/g, '').trim();

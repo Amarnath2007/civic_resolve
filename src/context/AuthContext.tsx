@@ -1,14 +1,28 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useTransition } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  updateProfile,
   signOut,
   onAuthStateChanged,
   User,
 } from 'firebase/auth';
 import { auth, isFirebaseClientConfigured } from '@/lib/firebase/client';
+
+export const DEMO_ACCOUNTS = {
+  citizen: {
+    email: 'citizen@civicresolve.org',
+    password: 'CivicResolve2026!',
+    displayName: 'Priya Raman',
+  },
+  admin: {
+    email: 'admin@civicresolve.gov',
+    password: 'CivicResolve2026!',
+    displayName: 'Municipal Operations Desk',
+  },
+} as const;
 
 export interface AuthContextType {
   user: {
@@ -23,7 +37,7 @@ export interface AuthContextType {
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   register: (email: string, pass: string, name?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  loginDemo: (role: 'citizen' | 'admin') => void;
+  loginDemo: (role: 'citizen' | 'admin') => Promise<{ success: boolean; error?: string }>;
   isFirebaseActive: boolean;
 }
 
@@ -35,30 +49,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [idToken, setIdToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper to determine admin status
-  const checkIsAdmin = (email?: string | null) => {
+  // Helper to determine administrator permissions
+  const checkIsAdmin = (email?: string | null): boolean => {
     if (!email) return false;
-    const lower = email.toLowerCase();
-    return lower.includes('admin') || lower.endsWith('.gov');
+    const lower = email.toLowerCase().trim();
+    return lower === 'admin@civicresolve.gov' || lower.includes('admin') || lower.endsWith('.gov');
   };
 
+  // Real Firebase Authentication State Listener
   useEffect(() => {
-    // Check local storage for persistent demo session
-    const savedDemoUser = localStorage.getItem('civicresolve_demo_user');
-    if (savedDemoUser) {
-      try {
-        const parsed = JSON.parse(savedDemoUser);
-        setUser(parsed);
-        setIdToken(`demo-token:${encodeURIComponent(parsed.email)}:${parsed.uid}`);
-        setLoading(false);
-        return;
-      } catch (e) {
-        localStorage.removeItem('civicresolve_demo_user');
-      }
-    }
-
     if (!isFirebaseClientConfigured) {
-      // Default initial state: Demo Citizen pre-loaded for frictionless testing
       setLoading(false);
       return;
     }
@@ -67,14 +67,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const unsubscribe = onAuthStateChanged(auth, async (fUser) => {
         setFirebaseUser(fUser);
         if (fUser && fUser.email) {
-          const token = await fUser.getIdToken();
-          setIdToken(token);
-          setUser({
-            uid: fUser.uid,
-            email: fUser.email,
-            displayName: fUser.displayName || fUser.email.split('@')[0],
-            isAdmin: checkIsAdmin(fUser.email),
-          });
+          try {
+            const token = await fUser.getIdToken();
+            setIdToken(token);
+            setUser({
+              uid: fUser.uid,
+              email: fUser.email,
+              displayName: fUser.displayName || fUser.email.split('@')[0],
+              isAdmin: checkIsAdmin(fUser.email),
+            });
+          } catch (tokenErr) {
+            console.error('Failed to retrieve Firebase ID token:', tokenErr);
+            setUser(null);
+            setIdToken(null);
+          }
         } else {
           setUser(null);
           setIdToken(null);
@@ -83,104 +89,120 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       return () => unsubscribe();
-    } catch {
+    } catch (err) {
+      console.error('Firebase Auth listener error:', err);
       setLoading(false);
     }
   }, []);
 
-  const login = async (email: string, pass: string) => {
-    if (!isFirebaseClientConfigured) {
-      // Offline Demo Mode authentication
-      const isAdmin = checkIsAdmin(email);
-      const demoUser = {
-        uid: `demo-${email.split('@')[0]}`,
-        email,
-        displayName: email.split('@')[0],
-        isAdmin,
-      };
-      setUser(demoUser);
-      const token = `demo-token:${encodeURIComponent(email)}:${demoUser.uid}`;
-      setIdToken(token);
-      localStorage.setItem('civicresolve_demo_user', JSON.stringify(demoUser));
-      return { success: true };
-    }
-
+  const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    setLoading(true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, pass);
-      const token = await cred.user.getIdToken();
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
+      const token = await cred.user.getIdToken(true);
+      setFirebaseUser(cred.user);
       setIdToken(token);
       setUser({
         uid: cred.user.uid,
-        email: cred.user.email || email,
+        email: cred.user.email || email.trim(),
         displayName: cred.user.displayName || email.split('@')[0],
         isAdmin: checkIsAdmin(cred.user.email),
       });
-      localStorage.removeItem('civicresolve_demo_user');
+      setLoading(false);
       return { success: true };
     } catch (err: any) {
+      setLoading(false);
       return { success: false, error: err.message || 'Failed to sign in.' };
     }
   };
 
-  const register = async (email: string, pass: string, name?: string) => {
-    if (!isFirebaseClientConfigured) {
-      const isAdmin = checkIsAdmin(email);
-      const demoUser = {
-        uid: `demo-${Date.now()}`,
-        email,
-        displayName: name || email.split('@')[0],
-        isAdmin,
-      };
-      setUser(demoUser);
-      const token = `demo-token:${encodeURIComponent(email)}:${demoUser.uid}`;
-      setIdToken(token);
-      localStorage.setItem('civicresolve_demo_user', JSON.stringify(demoUser));
-      return { success: true };
-    }
-
+  const register = async (email: string, pass: string, name?: string): Promise<{ success: boolean; error?: string }> => {
+    setLoading(true);
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email, pass);
-      const token = await cred.user.getIdToken();
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+      if (name && cred.user) {
+        try {
+          await updateProfile(cred.user, { displayName: name.trim() });
+        } catch {
+          // ignore profile update failure
+        }
+      }
+      const token = await cred.user.getIdToken(true);
+      setFirebaseUser(cred.user);
       setIdToken(token);
       setUser({
         uid: cred.user.uid,
-        email: cred.user.email || email,
-        displayName: name || email.split('@')[0],
+        email: cred.user.email || email.trim(),
+        displayName: name?.trim() || cred.user.displayName || email.split('@')[0],
         isAdmin: checkIsAdmin(cred.user.email),
       });
-      localStorage.removeItem('civicresolve_demo_user');
+      setLoading(false);
       return { success: true };
     } catch (err: any) {
+      setLoading(false);
       return { success: false, error: err.message || 'Failed to create account.' };
     }
   };
 
   const logout = async () => {
-    localStorage.removeItem('civicresolve_demo_user');
     setUser(null);
     setIdToken(null);
-    if (isFirebaseClientConfigured) {
-      try {
-        await signOut(auth);
-      } catch (err) {
-        console.warn('Sign out error:', err);
-      }
+    setFirebaseUser(null);
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('Sign out error:', err);
     }
   };
 
-  const loginDemo = (role: 'citizen' | 'admin') => {
-    const isAdm = role === 'admin';
-    const email = isAdm ? 'admin@civicresolve.gov' : 'citizen@civicresolve.org';
-    const demoUser = {
-      uid: isAdm ? 'demo-admin-master' : 'demo-citizen-1',
-      email,
-      displayName: isAdm ? 'Municipal Operations Desk' : 'Priya Raman',
-      isAdmin: isAdm,
-    };
-    setUser(demoUser);
-    const token = `demo-token:${encodeURIComponent(email)}:${demoUser.uid}`;
-    setIdToken(token);
-    localStorage.setItem('civicresolve_demo_user', JSON.stringify(demoUser));
+  /**
+   * Genuine Firebase Authentication for Demo Accounts:
+   * Uses real Firebase user credentials so the frontend obtains authentic Firebase ID tokens.
+   */
+  const loginDemo = async (role: 'citizen' | 'admin'): Promise<{ success: boolean; error?: string }> => {
+    setLoading(true);
+    const account = DEMO_ACCOUNTS[role];
+
+    try {
+      // First attempt genuine client sign-in
+      let cred;
+      try {
+        cred = await signInWithEmailAndPassword(auth, account.email, account.password);
+      } catch (authErr: any) {
+        // If user does not exist in Firebase yet, auto-provision via backend endpoint and retry
+        if (authErr?.code === 'auth/user-not-found' || authErr?.code === 'auth/invalid-credential') {
+          await fetch('/api/auth/provision-demo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role }),
+          });
+          cred = await signInWithEmailAndPassword(auth, account.email, account.password);
+        } else {
+          throw authErr;
+        }
+      }
+
+      if (cred && cred.user) {
+        const token = await cred.user.getIdToken(true);
+        setFirebaseUser(cred.user);
+        setIdToken(token);
+        setUser({
+          uid: cred.user.uid,
+          email: cred.user.email || account.email,
+          displayName: cred.user.displayName || account.displayName,
+          isAdmin: checkIsAdmin(cred.user.email),
+        });
+      }
+      setLoading(false);
+      return { success: true };
+    } catch (err: any) {
+      console.error('Demo authentication error:', err);
+      setLoading(false);
+      return {
+        success: false,
+        error: err.message || 'Could not authenticate demo account with Firebase.',
+      };
+    }
   };
 
   return (

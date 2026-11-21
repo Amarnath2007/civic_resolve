@@ -25,12 +25,15 @@ import {
   FileText,
   MapPin,
   Image as ImageIcon,
+  UserCheck,
+  Lock,
 } from 'lucide-react';
 
 function ReportIssueContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, idToken } = useAuth();
+  const { user, idToken, loading: authLoading, loginDemo } = useAuth();
+  const [isDemoSigningIn, setIsDemoSigningIn] = useState(false);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -62,6 +65,22 @@ function ReportIssueContent() {
     }
   }, [searchParams]);
 
+  // One-click quick demo login for citizen
+  const handleQuickCitizenDemo = async () => {
+    setIsDemoSigningIn(true);
+    setImageError(null);
+    try {
+      const res = await loginDemo('citizen');
+      if (!res.success) {
+        setImageError(res.error || 'Failed to authenticate citizen demo account.');
+      }
+    } catch (err: any) {
+      setImageError(err.message || 'Error signing in as citizen.');
+    } finally {
+      setIsDemoSigningIn(false);
+    }
+  };
+
   // Handle file input
   const handleImageChange = (file: File | null) => {
     setImageError(null);
@@ -73,7 +92,7 @@ function ReportIssueContent() {
     }
 
     if (!user) {
-      setImageError('Citizen authentication is required to upload evidence photographs. Please sign in or use the Demo Switcher in the top navigation bar.');
+      setImageError('Citizen sign-in is required before uploading photographic evidence.');
       return;
     }
 
@@ -150,6 +169,9 @@ function ReportIssueContent() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error('Your citizen session has expired or requires authentication. Please sign in again.');
+        }
         throw new Error(data.error || 'Failed to submit complaint.');
       }
 
@@ -369,55 +391,130 @@ function ReportIssueContent() {
         </div>
 
         {/* 4. Upload Photograph */}
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-[#19364A] uppercase tracking-wider">
-            4. Upload Photograph (Supporting Evidence)
-          </label>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-bold text-[#19364A] uppercase tracking-wider">
+              4. Upload Photograph (Supporting Evidence)
+            </label>
+            <span className="text-[11px] text-[#63736F]">
+              Optional — Text-only reports welcome
+            </span>
+          </div>
 
           {imageError && (
-            <p className="text-xs text-rose-600 bg-rose-50 p-2 rounded border border-rose-200">
-              {imageError}
-            </p>
+            <div className="text-xs text-rose-700 bg-rose-50 p-3 rounded-xl border border-rose-200 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>{imageError}</span>
+            </div>
           )}
 
-          {imagePreview ? (
-            <div className="relative rounded-xl overflow-hidden border border-[#DDE5DF] bg-slate-50 max-h-72 flex items-center justify-center">
-              <img
-                src={imagePreview}
-                alt="Complaint Evidence Preview"
-                className="max-h-72 w-full object-contain"
-              />
-              <button
-                type="button"
-                onClick={() => handleImageChange(null)}
-                className="absolute top-3 right-3 bg-[#19364A]/80 hover:bg-[#C85C55] text-white p-1.5 rounded-full transition shadow-md cursor-pointer"
-                title="Remove photograph"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          {authLoading ? (
+            <div className="p-6 rounded-xl border border-[#DDE5DF] bg-[#F7F8F4] flex items-center justify-center gap-3 text-xs text-[#63736F]">
+              <div className="w-4 h-4 border-2 border-[#24796C] border-t-transparent rounded-full animate-spin" />
+              <span>Checking citizen authentication status...</span>
+            </div>
+          ) : !user ? (
+            <div className="rounded-xl border border-[#DDE5DF] bg-[#F7F8F4] p-5 sm:p-6 space-y-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <div className="space-y-1 text-xs">
+                  <h4 className="font-bold text-[#19364A] text-sm">
+                    Citizen Sign-In Recommended for Photographic Evidence
+                  </h4>
+                  <p className="text-[#63736F] leading-relaxed">
+                    To maintain municipal integrity and prevent abusive submissions, photographic evidence is stored securely in Cloudinary and tied to a verified citizen identity.
+                  </p>
+                  <p className="text-[#63736F] leading-relaxed">
+                    You can still submit this grievance <strong>without a photograph</strong>, or quickly sign in below:
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  disabled={isDemoSigningIn}
+                  onClick={handleQuickCitizenDemo}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#24796C] hover:bg-[#19364A] text-white font-semibold text-xs transition shadow-xs cursor-pointer disabled:opacity-60"
+                >
+                  {isDemoSigningIn ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Authenticating with Firebase...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck className="w-4 h-4" />
+                      <span>One-Click Citizen Sign In (Priya Raman)</span>
+                    </>
+                  )}
+                </button>
+
+                <NextLink
+                  href="/login"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-[#DDE5DF] bg-white hover:bg-slate-50 text-[#19364A] font-semibold text-xs transition shadow-2xs"
+                >
+                  <span>Sign In with Password</span>
+                </NextLink>
+              </div>
             </div>
           ) : (
-            <label className="border-2 border-dashed border-[#DDE5DF] hover:border-[#24796C] rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition bg-[#F7F8F4] group">
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    handleImageChange(e.target.files[0]);
-                  }
-                }}
-              />
-              <div className="w-12 h-12 rounded-full bg-[#E7F0EA] flex items-center justify-center text-[#24796C] group-hover:scale-110 transition-transform mb-2">
-                <Upload className="w-5 h-5" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs px-3.5 py-2 rounded-xl bg-[#E7F0EA]/80 border border-[#24796C]/30 text-[#19364A]">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#24796C]" />
+                  <span>
+                    Authenticated Citizen: <strong>{user.displayName}</strong>{' '}
+                    <span className="text-[#63736F]">({user.email})</span>
+                  </span>
+                </div>
+                <span className="text-[10px] uppercase font-bold text-[#24796C] bg-white px-2 py-0.5 rounded-md border border-[#24796C]/30">
+                  Verified
+                </span>
               </div>
-              <span className="text-xs font-semibold text-[#19364A]">
-                Click or drag & drop to upload a photo
-              </span>
-              <span className="text-[11px] text-[#63736F] mt-1">
-                JPEG, PNG, or WebP up to 5 MB (Optional)
-              </span>
-            </label>
+
+              {imagePreview ? (
+                <div className="relative rounded-xl overflow-hidden border border-[#DDE5DF] bg-slate-50 max-h-72 flex items-center justify-center">
+                  <img
+                    src={imagePreview}
+                    alt="Complaint Evidence Preview"
+                    className="max-h-72 w-full object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleImageChange(null)}
+                    className="absolute top-3 right-3 bg-[#19364A]/80 hover:bg-[#C85C55] text-white p-1.5 rounded-full transition shadow-md cursor-pointer"
+                    title="Remove photograph"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="border-2 border-dashed border-[#DDE5DF] hover:border-[#24796C] rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition bg-[#F7F8F4] group">
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleImageChange(e.target.files[0]);
+                      }
+                    }}
+                  />
+                  <div className="w-12 h-12 rounded-full bg-[#E7F0EA] flex items-center justify-center text-[#24796C] group-hover:scale-110 transition-transform mb-2">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-semibold text-[#19364A]">
+                    Click or drag & drop to upload a photo
+                  </span>
+                  <span className="text-[11px] text-[#63736F] mt-1">
+                    JPEG, PNG, or WebP up to 5 MB (Cloudinary secure storage)
+                  </span>
+                </label>
+              )}
+            </div>
           )}
         </div>
 
