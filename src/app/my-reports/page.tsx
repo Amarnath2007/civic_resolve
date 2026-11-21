@@ -56,11 +56,6 @@ export default function MyReportsPage() {
     }
   }, [user, idToken, authLoading]);
 
-  // Reset page when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterStatus]);
-
   // Summary Metrics using useMemo to avoid recalculation on render
   const { total, inProgress, resolved } = useMemo(() => {
     let act = 0;
@@ -163,7 +158,10 @@ export default function MyReportsPage() {
             key={st}
             role="tab"
             aria-selected={filterStatus === st}
-            onClick={() => setFilterStatus(st)}
+            onClick={() => {
+              setFilterStatus(st);
+              setCurrentPage(1);
+            }}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               filterStatus === st
                 ? 'bg-[#19364A] text-white'

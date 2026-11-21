@@ -106,10 +106,11 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
       {/* Manual Input Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-[#19364A] mb-1">
+          <label htmlFor="locality-area-input" className="block text-xs font-semibold text-[#19364A] mb-1">
             Locality / Area <span className="text-[#C85C55]">*</span>
           </label>
           <input
+            id="locality-area-input"
             type="text"
             required
             value={locality}
@@ -120,10 +121,11 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[#19364A] mb-1">
+          <label htmlFor="street-landmark-input" className="block text-xs font-semibold text-[#19364A] mb-1">
             Street or Nearby Landmark
           </label>
           <input
+            id="street-landmark-input"
             type="text"
             value={streetOrLandmark}
             onChange={(e) => onStreetChange(e.target.value)}

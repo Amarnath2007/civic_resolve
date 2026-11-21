@@ -41,10 +41,11 @@ export async function GET(req: NextRequest) {
       radiusMetres,
       nearbyIssues: safeResults,
     });
-  } catch (error: any) {
-    console.error('API GET /api/reports/nearby error:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API GET /api/reports/nearby error:', err);
     return NextResponse.json(
-      { error: 'Failed to find nearby issues.', details: error.message },
+      { error: 'Failed to find nearby issues.', details: err.message },
       { status: 500 }
     );
   }

@@ -253,7 +253,10 @@ Return ONLY a valid JSON object matching this schema:
 `;
 
     // Prepare contents
-    const contents: any[] = [];
+    const contents: Array<{
+      inlineData?: { data: string; mimeType: string };
+      text?: string;
+    }> = [];
 
     // Multimodal image support if available
     if (input.imageBuffer) {
@@ -283,8 +286,8 @@ Return ONLY a valid JSON object matching this schema:
       'gemini-3.5-flash',
     ].filter((m, idx, arr) => arr.indexOf(m) === idx);
 
-    let response: any = null;
-    let lastError: any = null;
+    let response: { text?: string } | null = null;
+    let lastError: unknown = null;
 
     for (const currentModel of modelCandidates) {
       try {
@@ -305,9 +308,10 @@ Return ONLY a valid JSON object matching this schema:
         if (response && response.text) {
           break;
         }
-      } catch (modelErr: any) {
+      } catch (modelErr: unknown) {
         lastError = modelErr;
-        console.warn(`Model ${currentModel} error (${modelErr?.status || modelErr?.message}), attempting next candidate.`);
+        const err = modelErr as { status?: number; message?: string };
+        console.warn(`Model ${currentModel} error (${err?.status || err?.message}), attempting next candidate.`);
         continue;
       }
     }
@@ -320,7 +324,7 @@ Return ONLY a valid JSON object matching this schema:
     const responseText = response.text || '';
     const cleanedText = responseText.replace(/```json\n?|\n?```/g, '').trim();
 
-    let rawParsed: any;
+    let rawParsed: unknown;
     try {
       rawParsed = JSON.parse(cleanedText);
     } catch {

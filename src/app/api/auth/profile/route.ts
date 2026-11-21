@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     const userRef = firestore.collection('users').doc(user.uid);
     const userDoc = await userRef.get();
 
-    let profileData: any;
+    let profileData: FirebaseFirestore.DocumentData | undefined;
 
     if (!userDoc.exists) {
       // Safely initialize the profile in Firestore
@@ -58,15 +58,16 @@ export async function GET(req: NextRequest) {
       profile: {
         uid: user.uid,
         email: user.email,
-        displayName: profileData.displayName || user.displayName || user.email.split('@')[0],
+        displayName: profileData?.displayName || user.displayName || user.email.split('@')[0],
         role: user.isAdmin ? 'admin' : 'citizen',
         isAdmin: user.isAdmin,
       },
     });
-  } catch (error: any) {
-    console.error('API GET /api/auth/profile error:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API GET /api/auth/profile error:', err);
     return NextResponse.json(
-      { error: 'Failed to retrieve user profile.', details: error.message },
+      { error: 'Failed to retrieve user profile.', details: err.message },
       { status: 500 }
     );
   }
@@ -92,14 +93,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let body: any = {};
+    let body: Record<string, unknown> = {};
     try {
-      body = await req.json();
+      body = (await req.json()) as Record<string, unknown>;
     } catch {
       // Body is optional
     }
 
-    const displayName = (body.displayName || user.displayName || user.email.split('@')[0]).trim();
+    const displayName = (
+      (typeof body.displayName === 'string' && body.displayName) ||
+      user.displayName ||
+      user.email.split('@')[0]
+    ).trim();
     const role = user.isAdmin ? 'admin' : 'citizen';
 
     const userRef = firestore.collection('users').doc(user.uid);
@@ -135,10 +140,11 @@ export async function POST(req: NextRequest) {
         isAdmin: user.isAdmin,
       },
     });
-  } catch (error: any) {
-    console.error('API POST /api/auth/profile error:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API POST /api/auth/profile error:', err);
     return NextResponse.json(
-      { error: 'Failed to synchronize user profile.', details: error.message },
+      { error: 'Failed to synchronize user profile.', details: err.message },
       { status: 500 }
     );
   }

@@ -58,9 +58,10 @@ export default function TrackDetailPage() {
         setReport(data.report);
         setUpdates(data.updates || []);
         setSupportCount(data.report.supportCount || 0);
-      } catch (err: any) {
-        console.error('Fetch report error:', err);
-        setError(err.message || 'Complaint not found.');
+      } catch (err: unknown) {
+        const error = err as Error;
+        console.error('Fetch report error:', error);
+        setError(error.message || 'Complaint not found.');
       } finally {
         setLoading(false);
       }

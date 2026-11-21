@@ -38,11 +38,12 @@ export default function TrackSearchPage() {
       <div className="bg-white rounded-2xl border border-[#DDE5DF] p-6 sm:p-8 shadow-sm space-y-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-[#19364A] uppercase tracking-wider mb-2">
+            <label htmlFor="track-code-input" className="block text-xs font-bold text-[#19364A] uppercase tracking-wider mb-2">
               Complaint Tracking ID
             </label>
             <div className="relative">
               <input
+                id="track-code-input"
                 type="text"
                 required
                 value={code}

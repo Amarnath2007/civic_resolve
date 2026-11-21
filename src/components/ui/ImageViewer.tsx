@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
   ZoomIn,
   ZoomOut,
@@ -107,9 +108,12 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
               }
             }}
           >
-            <img
+            <Image
               src={src}
               alt={alt}
+              width={800}
+              height={500}
+              unoptimized
               loading="lazy"
               onLoad={() => setIsLoading(false)}
               onError={() => {
@@ -241,10 +245,13 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
                 else handleResetZoom(e);
               }}
             >
-              <img
+              <Image
                 src={src}
                 alt={alt}
-                className="max-h-[75vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+                width={1200}
+                height={900}
+                unoptimized
+                className="max-h-[75vh] max-w-[90vw] w-auto h-auto object-contain rounded-lg shadow-2xl"
               />
             </div>
           </div>

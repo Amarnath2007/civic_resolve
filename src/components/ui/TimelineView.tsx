@@ -1,6 +1,6 @@
 import React from 'react';
 import { ComplaintStatus, ComplaintUpdate } from '@/types';
-import { CheckCircle2, Clock, Wrench, FileCheck, Circle } from 'lucide-react';
+import { CheckCircle2, Clock, Wrench, FileCheck } from 'lucide-react';
 
 interface TimelineViewProps {
   currentStatus: ComplaintStatus;

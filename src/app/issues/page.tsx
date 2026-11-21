@@ -50,11 +50,6 @@ export default function NeighbourhoodPulsePage() {
     fetchPublicReports();
   }, []);
 
-  // Reset page when any filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [categoryFilter, localityFilter, searchQuery]);
-
   const handleSupport = async (reportId: string) => {
     if (!user) {
       router.push('/login');
@@ -146,7 +141,10 @@ export default function NeighbourhoodPulsePage() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Search by keyword, street, or ID..."
               className="w-full text-xs pl-9 pr-3 py-2 rounded-lg border border-[#DDE5DF] bg-[#F7F8F4] focus:outline-none focus:ring-1 focus:ring-[#24796C]"
             />
@@ -155,7 +153,10 @@ export default function NeighbourhoodPulsePage() {
           {/* Category Dropdown */}
           <select
             value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="text-xs px-3 py-2 rounded-lg border border-[#DDE5DF] bg-[#F7F8F4] text-[#19364A] focus:outline-none focus:ring-1 focus:ring-[#24796C]"
           >
             <option value="All">All Categories</option>
@@ -169,7 +170,10 @@ export default function NeighbourhoodPulsePage() {
           {/* Locality Dropdown */}
           <select
             value={localityFilter}
-            onChange={(e) => setLocalityFilter(e.target.value)}
+            onChange={(e) => {
+              setLocalityFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="text-xs px-3 py-2 rounded-lg border border-[#DDE5DF] bg-[#F7F8F4] text-[#19364A] focus:outline-none focus:ring-1 focus:ring-[#24796C]"
           >
             <option value="All">All Localities</option>

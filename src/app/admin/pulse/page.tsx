@@ -12,7 +12,7 @@ export default function AdminPulseClustersPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchReports = async () => {
+  const handleRefresh = async () => {
     setLoading(true);
     try {
       const headers: Record<string, string> = {};
@@ -30,7 +30,29 @@ export default function AdminPulseClustersPage() {
   };
 
   useEffect(() => {
-    fetchReports();
+    let ignore = false;
+    async function loadReports() {
+      try {
+        const headers: Record<string, string> = {};
+        if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+        const res = await fetch('/api/reports', { headers });
+        if (res.ok && !ignore) {
+          const d = await res.json();
+          setReports(d.reports || []);
+        }
+      } catch (err) {
+        if (!ignore) console.error(err);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadReports();
+    return () => {
+      ignore = true;
+    };
   }, [idToken]);
 
   const clusters = reports
@@ -67,7 +89,7 @@ export default function AdminPulseClustersPage() {
 
         <button
           type="button"
-          onClick={fetchReports}
+          onClick={handleRefresh}
           className="p-2 text-[#63736F] hover:text-[#19364A] bg-white border border-[#DDE5DF] rounded-xl transition shadow-2xs"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />

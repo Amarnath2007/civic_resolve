@@ -31,8 +31,9 @@ export async function POST(req: NextRequest) {
       uid = existing.uid;
       // Ensure credentials and profile are up to date
       await auth.updateUser(uid, { password, displayName });
-    } catch (err: any) {
-      if (err.code === 'auth/user-not-found') {
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
+      if (error.code === 'auth/user-not-found') {
         const created = await auth.createUser({
           email,
           password,
@@ -68,10 +69,11 @@ export async function POST(req: NextRequest) {
       role,
       isAdmin: isAdm,
     });
-  } catch (err: any) {
-    console.error('Provision demo user error:', err);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('Provision demo user error:', error);
     return NextResponse.json(
-      { error: err.message || 'Failed to provision demo user.' },
+      { error: error.message || 'Failed to provision demo user.' },
       { status: 500 }
     );
   }

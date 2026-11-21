@@ -76,12 +76,13 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#19364A] mb-1">
+            <label htmlFor="reg-name" className="block text-xs font-semibold text-[#19364A] mb-1">
               Full Name
             </label>
             <div className="relative">
               <User className="w-4 h-4 text-[#63736F] absolute left-3 top-3" />
               <input
+                id="reg-name"
                 type="text"
                 required
                 value={name}
@@ -93,12 +94,13 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#19364A] mb-1">
+            <label htmlFor="reg-email" className="block text-xs font-semibold text-[#19364A] mb-1">
               Email Address
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-[#63736F] absolute left-3 top-3" />
               <input
+                id="reg-email"
                 type="email"
                 required
                 value={email}
@@ -110,12 +112,13 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#19364A] mb-1">
+            <label htmlFor="reg-password" className="block text-xs font-semibold text-[#19364A] mb-1">
               Password (min 6 characters)
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-[#63736F] absolute left-3 top-3" />
               <input
+                id="reg-password"
                 type="password"
                 required
                 value={password}
@@ -127,12 +130,13 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#19364A] mb-1">
+            <label htmlFor="reg-confirm" className="block text-xs font-semibold text-[#19364A] mb-1">
               Confirm Password
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-[#63736F] absolute left-3 top-3" />
               <input
+                id="reg-confirm"
                 type="password"
                 required
                 value={confirmPassword}

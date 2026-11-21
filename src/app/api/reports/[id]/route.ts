@@ -80,10 +80,11 @@ export async function GET(req: NextRequest, { params }: RouteProps) {
       { error: 'Forbidden: Private complaint record. Please sign in with the reporter account.' },
       { status: 403 }
     );
-  } catch (error: any) {
-    console.error('API GET /api/reports/[id] error:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API GET /api/reports/[id] error:', err);
     return NextResponse.json(
-      { error: 'Failed to fetch report.', details: error.message },
+      { error: 'Failed to fetch report.', details: err.message },
       { status: 500 }
     );
   }
@@ -102,7 +103,7 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
       );
     }
 
-    let body: any;
+    let body: unknown;
     try {
       body = await req.json();
     } catch {
@@ -118,7 +119,7 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
     }
 
     const data = parsed.data;
-    const updates: Record<string, any> = {};
+    const updates: Record<string, unknown> = {};
 
     if (data.status && COMPLAINT_STATUSES.includes(data.status as ComplaintStatus)) {
       updates.status = data.status;
@@ -159,10 +160,11 @@ export async function PATCH(req: NextRequest, { params }: RouteProps) {
       report: updated,
       updates: freshUpdates,
     });
-  } catch (error: any) {
-    console.error('API PATCH /api/reports/[id] error:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API PATCH /api/reports/[id] error:', err);
     return NextResponse.json(
-      { error: 'Failed to update report.', details: error.message },
+      { error: 'Failed to update report.', details: err.message },
       { status: 500 }
     );
   }

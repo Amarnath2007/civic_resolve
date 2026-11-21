@@ -33,10 +33,11 @@ export async function POST(req: NextRequest, { params }: RouteProps) {
       message: result.message,
       supportCount: result.supportCount,
     });
-  } catch (error: any) {
-    console.error('API POST /api/reports/[id]/support error:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API POST /api/reports/[id]/support error:', err);
     return NextResponse.json(
-      { error: 'Failed to record support.', details: error.message },
+      { error: 'Failed to record support.', details: err.message },
       { status: 500 }
     );
   }

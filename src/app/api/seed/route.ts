@@ -21,10 +21,11 @@ export async function POST(req: NextRequest) {
       message: 'Demo dataset successfully re-seeded for Coimbatore, Tamil Nadu.',
       stats,
     });
-  } catch (error: any) {
-    console.error('API POST /api/seed error:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API POST /api/seed error:', err);
     return NextResponse.json(
-      { error: 'Failed to seed demo data.', details: error.message },
+      { error: 'Failed to seed demo data.', details: err.message },
       { status: 500 }
     );
   }

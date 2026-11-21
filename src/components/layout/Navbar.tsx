@@ -13,7 +13,6 @@ import {
   X,
   UserCheck,
   ChevronDown,
-  Sparkles,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -35,11 +34,6 @@ export const Navbar: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Close mobile drawer on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
 
   // If inside the Admin Portal, omit the citizen header so the admin layout controls navigation
   if (pathname.startsWith('/admin')) {

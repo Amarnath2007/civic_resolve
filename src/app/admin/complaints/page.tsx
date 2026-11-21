@@ -38,7 +38,8 @@ function ComplaintQueueContent() {
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [departmentFilter, setDepartmentFilter] = useState('All');
 
-  const fetchReports = async () => {
+  const handleRefresh = async () => {
+    setRefreshing(true);
     try {
       const headers: Record<string, string> = {};
       if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
@@ -50,19 +51,36 @@ function ComplaintQueueContent() {
     } catch (err) {
       console.error('Failed to load reports:', err);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchReports();
-  }, [idToken]);
+    let ignore = false;
+    async function loadReports() {
+      try {
+        const headers: Record<string, string> = {};
+        if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+        const res = await fetch('/api/reports', { headers });
+        if (res.ok && !ignore) {
+          const d = await res.json();
+          setReports(d.reports || []);
+        }
+      } catch (err) {
+        if (!ignore) console.error('Failed to load reports:', err);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    }
 
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter, categoryFilter, priorityFilter, departmentFilter]);
+    loadReports();
+    return () => {
+      ignore = true;
+    };
+  }, [idToken]);
 
   const filtered = useMemo(() => {
     return reports.filter((r) => {
@@ -106,10 +124,7 @@ function ComplaintQueueContent() {
 
         <button
           type="button"
-          onClick={() => {
-            setRefreshing(true);
-            fetchReports();
-          }}
+          onClick={handleRefresh}
           disabled={refreshing}
           className="p-2 text-[#63736F] hover:text-[#19364A] bg-white border border-[#DDE5DF] rounded-xl transition shadow-2xs cursor-pointer"
           title="Refresh"
@@ -125,7 +140,10 @@ function ComplaintQueueContent() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search code, title, street..."
             className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#DDE5DF] bg-[#F7F8F4] focus:outline-none focus:ring-1 focus:ring-[#24796C]"
           />
@@ -133,7 +151,10 @@ function ComplaintQueueContent() {
 
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setCurrentPage(1);
+          }}
           className="px-3 py-2 rounded-xl border border-[#DDE5DF] bg-[#F7F8F4]"
         >
           <option value="All">All Statuses</option>
@@ -144,7 +165,10 @@ function ComplaintQueueContent() {
 
         <select
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
+          onChange={(e) => {
+            setCategoryFilter(e.target.value);
+            setCurrentPage(1);
+          }}
           className="px-3 py-2 rounded-xl border border-[#DDE5DF] bg-[#F7F8F4]"
         >
           <option value="All">All Categories</option>
@@ -155,7 +179,10 @@ function ComplaintQueueContent() {
 
         <select
           value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value)}
+          onChange={(e) => {
+            setPriorityFilter(e.target.value);
+            setCurrentPage(1);
+          }}
           className="px-3 py-2 rounded-xl border border-[#DDE5DF] bg-[#F7F8F4]"
         >
           <option value="All">All Priorities</option>
@@ -166,7 +193,10 @@ function ComplaintQueueContent() {
 
         <select
           value={departmentFilter}
-          onChange={(e) => setDepartmentFilter(e.target.value)}
+          onChange={(e) => {
+            setDepartmentFilter(e.target.value);
+            setCurrentPage(1);
+          }}
           className="px-3 py-2 rounded-xl border border-[#DDE5DF] bg-[#F7F8F4]"
         >
           <option value="All">All Departments</option>
@@ -183,6 +213,7 @@ function ComplaintQueueContent() {
               setPriorityFilter('All');
               setDepartmentFilter('All');
               setSearchQuery('');
+              setCurrentPage(1);
             }}
             className="text-xs font-semibold text-[#24796C] hover:underline px-2"
           >
@@ -197,13 +228,13 @@ function ComplaintQueueContent() {
           <table className="w-full text-left text-xs border-collapse">
             <thead className="bg-[#F7F8F4] border-b border-[#DDE5DF] text-[#63736F] font-bold uppercase tracking-wider">
               <tr>
-                <th className="py-3.5 px-4">Tracking Code</th>
-                <th className="py-3.5 px-4">Issue Title</th>
-                <th className="py-3.5 px-4">Department</th>
-                <th className="py-3.5 px-4">Locality</th>
-                <th className="py-3.5 px-4">Priority Score</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4 text-right">Action</th>
+                <th scope="col" className="py-3.5 px-4">Tracking Code</th>
+                <th scope="col" className="py-3.5 px-4">Issue Title</th>
+                <th scope="col" className="py-3.5 px-4">Department</th>
+                <th scope="col" className="py-3.5 px-4">Locality</th>
+                <th scope="col" className="py-3.5 px-4">Priority Score</th>
+                <th scope="col" className="py-3.5 px-4">Status</th>
+                <th scope="col" className="py-3.5 px-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#DDE5DF] text-[#19364A]">

@@ -55,6 +55,15 @@ export default function AdminOverviewPage() {
     return { criticalIssues: crit, inProgressCount: inProg, resolvedCount: res };
   }, [reports]);
 
+  if (loading) {
+    return (
+      <div className="py-20 text-center space-y-3" aria-live="polite">
+        <div className="w-8 h-8 border-3 border-[#24796C] border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs text-[#63736F]">Compiling municipal intelligence overview...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Top Banner */}

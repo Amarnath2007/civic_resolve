@@ -1,15 +1,14 @@
 import React from 'react';
-import { CivicCategory, CivicDepartment, PriorityLevel } from '@/types';
-import { Sparkles, Bot, AlertTriangle, CheckCircle2, Eye, Building2, Tag } from 'lucide-react';
-import { PriorityBadge } from './PriorityBadge';
+import { CivicCategory, CivicDepartment } from '@/types';
+import { Sparkles, AlertTriangle, CheckCircle2, Eye, Building2, Tag } from 'lucide-react';
 
 interface AiAssessmentCardProps {
   summary: string;
   reason: string;
   suggestedCategory: CivicCategory;
   suggestedDepartment: CivicDepartment;
-  priorityLevel: PriorityLevel;
-  priorityScore: number;
+  priorityLevel?: string;
+  priorityScore?: number;
   confidence: number;
   imageObservations?: string[];
   recommendedAction?: string;
@@ -23,13 +22,10 @@ export const AiAssessmentCard: React.FC<AiAssessmentCardProps> = ({
   reason,
   suggestedCategory,
   suggestedDepartment,
-  priorityLevel,
-  priorityScore,
   confidence,
   imageObservations = [],
   recommendedAction,
   triageMethod = 'gemini',
-  tags = [],
   detectedLanguage,
 }) => {
   const isFallback = triageMethod === 'fallback';

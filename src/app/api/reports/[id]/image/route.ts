@@ -60,10 +60,11 @@ export async function GET(req: NextRequest, { params }: RouteProps) {
       signedUrl,
       expiresIn: 3600,
     });
-  } catch (error: any) {
-    console.error('API GET /api/reports/[id]/image error:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API GET /api/reports/[id]/image error:', err);
     return NextResponse.json(
-      { error: 'Failed to generate secure image access URL.', details: error.message },
+      { error: 'Failed to generate secure image access URL.', details: err.message },
       { status: 500 }
     );
   }

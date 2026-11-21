@@ -1,6 +1,5 @@
 import React from 'react';
 import { ScoreBreakdown, PriorityLevel } from '@/types';
-import { SCORING_WEIGHTS } from '@/lib/constants';
 import { PriorityBadge } from './PriorityBadge';
 import { ShieldCheck, Info } from 'lucide-react';
 

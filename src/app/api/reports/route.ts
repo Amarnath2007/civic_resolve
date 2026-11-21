@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    let body: any;
+    let body: unknown;
     try {
       body = await req.json();
     } catch {
@@ -165,7 +165,7 @@ export async function POST(req: NextRequest) {
             imageMetadata.format
           );
         }
-      } catch (uploadErr: any) {
+      } catch (uploadErr: unknown) {
         console.error('Cloudinary evidence upload error:', uploadErr);
         // Do not fail entire complaint if Cloudinary is temporarily unreachable
       }
@@ -263,10 +263,11 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
-    console.error('API POST /api/reports error:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API POST /api/reports error:', err);
     return NextResponse.json(
-      { error: 'Failed to process and store civic report.', details: error.message },
+      { error: 'Failed to process and store civic report.', details: err.message },
       { status: 500 }
     );
   }

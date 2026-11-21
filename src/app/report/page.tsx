@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
+import Image from 'next/image';
 import NextLink from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -165,9 +166,10 @@ function ReportIssueContent() {
 
       setSubmittedReport(data.report);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err: any) {
-      console.error('Submission failed:', err);
-      setSubmissionError(err.message || 'Network error occurred while submitting your report.');
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.error('Submission failed:', error);
+      setSubmissionError(error.message || 'Network error occurred while submitting your report.');
     } finally {
       setSubmitting(false);
     }
@@ -319,10 +321,11 @@ function ReportIssueContent() {
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-[#DDE5DF] p-6 sm:p-8 shadow-sm space-y-6">
         {/* 1. Title */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-[#19364A] uppercase tracking-wider">
+          <label htmlFor="issue-title" className="block text-xs font-bold text-[#19364A] uppercase tracking-wider">
             1. Issue Title <span className="text-[#C85C55]">*</span>
           </label>
           <input
+            id="issue-title"
             type="text"
             required
             value={title}
@@ -335,7 +338,7 @@ function ReportIssueContent() {
         {/* 2. Description (Multilingual support note) */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-bold text-[#19364A] uppercase tracking-wider">
+            <label htmlFor="issue-description" className="block text-xs font-bold text-[#19364A] uppercase tracking-wider">
               2. Describe the Problem <span className="text-[#C85C55]">*</span>
             </label>
             <span className="text-[11px] text-[#24796C] font-semibold flex items-center gap-1">
@@ -345,26 +348,30 @@ function ReportIssueContent() {
           </div>
 
           <textarea
+            id="issue-description"
             required
             rows={4}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            aria-describedby="issue-desc-hint"
             placeholder="Describe what is broken, hazardous, or overflowing. (You may write in English, Tamil, or Tanglish like 'Road romba damaged ah iruku, street light velicham illa')."
             className="w-full text-sm px-4 py-3 rounded-xl border border-[#DDE5DF] bg-white text-[#19364A] placeholder-[#63736F]/60 focus:outline-none focus:ring-2 focus:ring-[#24796C] transition leading-relaxed"
           />
-          <p className="text-[11px] text-[#63736F]">
+          <p id="issue-desc-hint" className="text-[11px] text-[#63736F]">
             Gemini will interpret your description, generate a standardized municipal summary, and preserve your original statement verbatim.
           </p>
         </div>
 
         {/* 3. Category Dropdown */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-[#19364A] uppercase tracking-wider">
+          <label htmlFor="issue-category" className="block text-xs font-bold text-[#19364A] uppercase tracking-wider">
             3. Issue Category
           </label>
           <select
+            id="issue-category"
             value={category}
             onChange={(e) => setCategory(e.target.value as CivicCategory)}
+            aria-describedby="issue-cat-hint"
             className="w-full text-sm px-4 py-3 rounded-xl border border-[#DDE5DF] bg-white text-[#19364A] focus:outline-none focus:ring-2 focus:ring-[#24796C] transition"
           >
             {CIVIC_CATEGORIES.map((cat) => (
@@ -373,7 +380,7 @@ function ReportIssueContent() {
               </option>
             ))}
           </select>
-          <p className="text-[11px] text-[#63736F]">
+          <p id="issue-cat-hint" className="text-[11px] text-[#63736F]">
             Select &quot;Other / Not Sure&quot; if you are uncertain—our AI will classify it accurately.
           </p>
         </div>
@@ -465,9 +472,12 @@ function ReportIssueContent() {
 
               {imagePreview ? (
                 <div className="relative rounded-xl overflow-hidden border border-[#DDE5DF] bg-slate-50 max-h-72 flex items-center justify-center">
-                  <img
+                  <Image
                     src={imagePreview}
                     alt="Complaint Evidence Preview"
+                    width={600}
+                    height={350}
+                    unoptimized
                     className="max-h-72 w-full object-contain"
                   />
                   <button
@@ -480,11 +490,13 @@ function ReportIssueContent() {
                   </button>
                 </div>
               ) : (
-                <label className="border-2 border-dashed border-[#DDE5DF] hover:border-[#24796C] rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition bg-[#F7F8F4] group">
+                <label htmlFor="report-photo-input" className="border-2 border-dashed border-[#DDE5DF] hover:border-[#24796C] rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition bg-[#F7F8F4] group">
                   <input
+                    id="report-photo-input"
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
+                    aria-label="Upload supporting photograph evidence"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         handleImageChange(e.target.files[0]);
@@ -527,8 +539,9 @@ function ReportIssueContent() {
 
         {/* 6. Privacy & Community Sharing */}
         <div className="border-t border-[#DDE5DF] pt-6 space-y-3">
-          <label className="flex items-start gap-3 cursor-pointer select-none">
+          <label htmlFor="share-publicly-checkbox" className="flex items-start gap-3 cursor-pointer select-none">
             <input
+              id="share-publicly-checkbox"
               type="checkbox"
               checked={sharePublicly}
               onChange={(e) => setSharePublicly(e.target.checked)}

@@ -3,7 +3,7 @@
 import React from 'react';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, ShieldCheck, Heart, MapPin, Sparkles } from 'lucide-react';
+import { Building2, MapPin, Sparkles } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   const pathname = usePathname();

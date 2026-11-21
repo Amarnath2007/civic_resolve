@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthContextType['user']>(null);
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [idToken, setIdToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(isFirebaseClientConfigured);
 
   // Helper to fetch server-verified profile
   const fetchServerProfile = async (token: string, fallbackUser?: { uid: string; email: string; displayName?: string }) => {
@@ -91,7 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Real Firebase Authentication State Listener
   useEffect(() => {
     if (!isFirebaseClientConfigured) {
-      setLoading(false);
       return;
     }
 
@@ -123,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return () => unsubscribe();
     } catch (err) {
       console.error('Firebase Auth listener error:', err);
-      setLoading(false);
+      queueMicrotask(() => setLoading(false));
     }
   }, []);
 
@@ -171,7 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(profile);
       setLoading(false);
       return { success: true, isAdmin: profile?.isAdmin };
-    } catch (err: any) {
+    } catch (err: unknown) {
       setLoading(false);
       return { success: false, error: getFirebaseErrorMessage(err) };
     }
@@ -232,7 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      const profileData = await profileRes.json();
+      await profileRes.json();
       const freshToken = await cred.user.getIdToken(true);
 
       setFirebaseUser(cred.user);
@@ -247,7 +246,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setLoading(false);
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
       // If profile initialization failed after auth creation, ensure cleanup
       if (createdUser) {
         try {
@@ -286,11 +285,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let cred;
       try {
         cred = await signInWithEmailAndPassword(auth, account.email, account.password);
-      } catch (authErr: any) {
+      } catch (authErr: unknown) {
+        const authError = authErr as { code?: string };
         // If user does not exist in Firebase yet, auto-provision via backend endpoint and retry
         if (
-          authErr?.code === 'auth/user-not-found' ||
-          authErr?.code === 'auth/invalid-credential'
+          authError?.code === 'auth/user-not-found' ||
+          authError?.code === 'auth/invalid-credential'
         ) {
           await fetch('/api/auth/provision-demo', {
             method: 'POST',
@@ -321,7 +321,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setLoading(false);
       return { success: false, error: 'Could not obtain user credentials.' };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Demo authentication error:', err);
       setLoading(false);
       return {
