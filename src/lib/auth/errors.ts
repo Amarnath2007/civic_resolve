@@ -1,10 +1,11 @@
 /**
  * Utility to map Firebase Authentication error codes to clear, actionable human messages.
  */
-export function getFirebaseErrorMessage(error: any): string {
+export function getFirebaseErrorMessage(error: unknown): string {
   if (!error) return 'An unexpected error occurred. Please try again.';
 
-  const code: string = error.code || (typeof error === 'string' ? error : error.message || '');
+  const err = error as { code?: string; message?: string };
+  const code: string = err.code || (typeof error === 'string' ? error : err.message || '');
 
   switch (code) {
     case 'auth/invalid-credential':
@@ -34,12 +35,12 @@ export function getFirebaseErrorMessage(error: any): string {
       return 'Sign-in window was closed before completing authentication.';
     default:
       // Strip generic "Firebase: Error (" wrapper if present
-      if (typeof error.message === 'string') {
-        const match = error.message.match(/Firebase:\s*(?:Error\s*)?\(([^)]+)\)\.?/);
+      if (typeof err.message === 'string') {
+        const match = err.message.match(/Firebase:\s*(?:Error\s*)?\(([^)]+)\)\.?/);
         if (match && match[1]) {
           return getFirebaseErrorMessage({ code: match[1] });
         }
-        return error.message;
+        return err.message;
       }
       return 'Authentication failed. Please check your credentials and try again.';
   }

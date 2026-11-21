@@ -1,24 +1,21 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import NextLink from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { PriorityBadge } from '@/components/ui/PriorityBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { PublicReport, CivicCategory } from '@/types';
+import { PublicReport } from '@/types';
 import { CIVIC_CATEGORIES } from '@/lib/constants';
 import {
-  Activity,
   MapPin,
   ThumbsUp,
-  Filter,
   ShieldCheck,
   Search,
   ArrowRight,
-  Sparkles,
-  Building2,
-  Users,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export default function NeighbourhoodPulsePage() {
@@ -31,6 +28,8 @@ export default function NeighbourhoodPulsePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [votedMap, setVotedMap] = useState<Record<string, number>>({});
   const [voteFeedback, setVoteFeedback] = useState<Record<string, string>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
   useEffect(() => {
     async function fetchPublicReports() {
@@ -50,6 +49,11 @@ export default function NeighbourhoodPulsePage() {
 
     fetchPublicReports();
   }, []);
+
+  // Reset page when any filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, localityFilter, searchQuery]);
 
   const handleSupport = async (reportId: string) => {
     if (!user) {
@@ -77,23 +81,34 @@ export default function NeighbourhoodPulsePage() {
     }
   };
 
-  // Derive unique localities
-  const localities = Array.from(new Set(reports.map((r) => r.locality).filter(Boolean)));
+  // Derive unique localities using useMemo
+  const localities = useMemo(() => {
+    return Array.from(new Set(reports.map((r) => r.locality).filter(Boolean)));
+  }, [reports]);
 
-  const filtered = reports.filter((r) => {
-    if (categoryFilter !== 'All' && r.category !== categoryFilter) return false;
-    if (localityFilter !== 'All' && r.locality !== localityFilter) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const match =
-        r.title.toLowerCase().includes(q) ||
-        r.summary.toLowerCase().includes(q) ||
-        r.locality.toLowerCase().includes(q) ||
-        r.trackingCode.toLowerCase().includes(q);
-      if (!match) return false;
-    }
-    return true;
-  });
+  // Filtered reports using useMemo
+  const filtered = useMemo(() => {
+    return reports.filter((r) => {
+      if (categoryFilter !== 'All' && r.category !== categoryFilter) return false;
+      if (localityFilter !== 'All' && r.locality !== localityFilter) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const match =
+          r.title.toLowerCase().includes(q) ||
+          r.summary.toLowerCase().includes(q) ||
+          r.locality.toLowerCase().includes(q) ||
+          r.trackingCode.toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [reports, categoryFilter, localityFilter, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedReports = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -176,83 +191,120 @@ export default function NeighbourhoodPulsePage() {
 
       {/* Grid of Public Complaints */}
       {loading ? (
-        <div className="py-20 text-center text-xs text-[#63736F]">
+        <div className="py-20 text-center text-xs text-[#63736F]" aria-live="polite">
           Loading neighbourhood issues...
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#DDE5DF] p-12 text-center text-[#63736F] space-y-2">
           <p className="text-sm font-semibold text-[#19364A]">No reports found matching your filters.</p>
-          <p className="text-xs">Try clearing your search query or selecting "All Categories".</p>
+          <p className="text-xs">Try clearing your search query or selecting &quot;All Categories&quot;.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((report) => {
-            const currentCount = votedMap[report.id] !== undefined ? votedMap[report.id] : report.supportCount;
-            const feedback = voteFeedback[report.id];
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedReports.map((report) => {
+              const currentCount = votedMap[report.id] !== undefined ? votedMap[report.id] : report.supportCount;
+              const feedback = voteFeedback[report.id];
 
-            return (
-              <div
-                key={report.id}
-                className="bg-white rounded-xl border border-[#DDE5DF] p-5 shadow-sm hover:border-[#24796C] transition flex flex-col justify-between space-y-4"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-xs font-bold text-[#63736F]">
-                      {report.trackingCode}
-                    </span>
-                    <PriorityBadge priority={report.priority} size="sm" />
-                  </div>
-
-                  <h3 className="text-base font-bold text-[#19364A] line-clamp-2">
-                    {report.title}
-                  </h3>
-
-                  <p className="text-xs text-[#63736F] line-clamp-3 leading-relaxed">
-                    {report.summary}
-                  </p>
-
-                  {/* Privacy-safe AI visual inspection badge */}
-                  {report.imageObservations && report.imageObservations.length > 0 && (
-                    <div className="bg-[#E7F0EA] p-2.5 rounded-lg border border-[#24796C]/20 text-[11px] text-[#24796C] space-y-0.5">
-                      <span className="font-semibold block">AI Visual Evidence:</span>
-                      <span className="text-[#19364A] line-clamp-2">{report.imageObservations[0]}</span>
+              return (
+                <div
+                  key={report.id}
+                  className="bg-white rounded-xl border border-[#DDE5DF] p-5 shadow-sm hover:border-[#24796C] transition flex flex-col justify-between space-y-4"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs font-bold text-[#63736F]">
+                        {report.trackingCode}
+                      </span>
+                      <PriorityBadge priority={report.priority} size="sm" />
                     </div>
-                  )}
-                </div>
 
-                <div className="space-y-3 pt-3 border-t border-[#DDE5DF]">
-                  <div className="flex items-center justify-between text-xs text-[#63736F]">
-                    <span className="flex items-center gap-1 font-medium text-[#19364A]">
-                      <MapPin className="w-3.5 h-3.5 text-[#24796C]" />
-                      {report.locality}
-                    </span>
-                    <StatusBadge status={report.status} size="sm" />
+                    <h3 className="text-base font-bold text-[#19364A] line-clamp-2">
+                      {report.title}
+                    </h3>
+
+                    <p className="text-xs text-[#63736F] line-clamp-3 leading-relaxed">
+                      {report.summary}
+                    </p>
+
+                    {/* Privacy-safe AI visual inspection badge */}
+                    {report.imageObservations && report.imageObservations.length > 0 && (
+                      <div className="bg-[#E7F0EA] p-2.5 rounded-lg border border-[#24796C]/20 text-[11px] text-[#24796C] space-y-0.5">
+                        <span className="font-semibold block">AI Visual Evidence:</span>
+                        <span className="text-[#19364A] line-clamp-2">{report.imageObservations[0]}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-1">
-                    {/* Support Button */}
-                    <button
-                      type="button"
-                      onClick={() => handleSupport(report.id)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#E7F0EA] hover:bg-[#24796C] hover:text-white text-[#24796C] transition cursor-pointer"
-                    >
-                      <ThumbsUp className="w-3.5 h-3.5" />
-                      <span>{currentCount} Supporters</span>
-                      {feedback && <span className="text-[10px] ml-1 font-bold">({feedback})</span>}
-                    </button>
+                  <div className="space-y-3 pt-3 border-t border-[#DDE5DF]">
+                    <div className="flex items-center justify-between text-xs text-[#63736F]">
+                      <span className="flex items-center gap-1 font-medium text-[#19364A]">
+                        <MapPin className="w-3.5 h-3.5 text-[#24796C]" />
+                        {report.locality}
+                      </span>
+                      <StatusBadge status={report.status} size="sm" />
+                    </div>
 
-                    <NextLink
-                      href={`/track/${report.trackingCode}`}
-                      className="text-xs font-semibold text-[#24796C] hover:underline flex items-center gap-1"
-                    >
-                      <span>Track</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </NextLink>
+                    <div className="flex items-center justify-between pt-1">
+                      {/* Support Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleSupport(report.id)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#E7F0EA] hover:bg-[#24796C] hover:text-white text-[#24796C] transition cursor-pointer"
+                        aria-label={`Support this issue (${currentCount} supporters)`}
+                      >
+                        <ThumbsUp className="w-3.5 h-3.5" />
+                        <span>{currentCount} Supporters</span>
+                        {feedback && <span className="text-[10px] ml-1 font-bold">({feedback})</span>}
+                      </button>
+
+                      <NextLink
+                        href={`/track/${report.trackingCode}`}
+                        className="text-xs font-semibold text-[#24796C] hover:underline flex items-center gap-1"
+                      >
+                        <span>Track</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </NextLink>
+                    </div>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-[#DDE5DF] pt-4 px-2" aria-label="Pagination Navigation">
+              <span className="text-xs text-[#63736F]">
+                Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} issues
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#DDE5DF] bg-white text-xs font-semibold text-[#19364A] hover:bg-[#F7F8F4] disabled:opacity-40 transition cursor-pointer"
+                  aria-label="Previous Page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
+                <span className="text-xs font-medium text-[#19364A] px-2">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#DDE5DF] bg-white text-xs font-semibold text-[#19364A] hover:bg-[#F7F8F4] disabled:opacity-40 transition cursor-pointer"
+                  aria-label="Next Page"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
       )}
     </div>

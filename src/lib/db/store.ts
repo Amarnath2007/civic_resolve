@@ -1,10 +1,6 @@
 import {
   Report,
   PublicReport,
-  ComplaintStatus,
-  CivicCategory,
-  CivicDepartment,
-  PriorityLevel,
   ComplaintUpdate,
   AdminAuditLog,
   DashboardStats,
@@ -258,12 +254,16 @@ export function toPublicReport(report: Report, updates: ComplaintUpdate[] = []):
   };
 }
 
+// Short TTL memory cache for non-sensitive aggregated dashboard metrics to prevent repeated Firestore scans
+let cachedDashboardStats: { stats: DashboardStats; expiresAt: number } | null = null;
+const STATS_CACHE_TTL_MS = 15_000; // 15 seconds cache window
+
 /**
  * Database abstraction service layer
  */
 export const dbService = {
   /**
-   * Fetch all reports with multi-criteria filtering
+   * Fetch all reports with multi-criteria filtering and query limiting
    */
   async getReports(filters?: {
     status?: string;
@@ -272,6 +272,8 @@ export const dbService = {
     department?: string;
     reporterUid?: string;
     search?: string;
+    limit?: number;
+    page?: number;
   }): Promise<Report[]> {
     const { firestore, isConfigured } = getFirebaseAdmin();
 
@@ -279,8 +281,27 @@ export const dbService = {
 
     if (isConfigured && firestore) {
       try {
-        const snap = await firestore.collection('reports').orderBy('createdAt', 'desc').get();
-        allReports = snap.docs.map((doc: any) => doc.data() as Report);
+        if (filters?.reporterUid) {
+          // Efficient single-field indexed query for citizen-specific complaints
+          const snap = await firestore
+            .collection('reports')
+            .where('reporterUid', '==', filters.reporterUid)
+            .limit(100)
+            .get();
+          allReports = snap.docs.map((doc) => doc.data() as Report);
+          allReports.sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        } else {
+          // Apply query limit to avoid unbounded scans
+          const queryLimit = filters?.limit && filters.limit > 0 ? Math.min(filters.limit, 150) : 100;
+          const snap = await firestore
+            .collection('reports')
+            .orderBy('createdAt', 'desc')
+            .limit(queryLimit)
+            .get();
+          allReports = snap.docs.map((doc) => doc.data() as Report);
+        }
       } catch (err) {
         console.warn('Firestore getReports failed, falling back to local memory store:', err);
         allReports = globalLocalStore.getAllReports();
@@ -289,7 +310,7 @@ export const dbService = {
       allReports = globalLocalStore.getAllReports();
     }
 
-    return allReports.filter((r) => {
+    const filtered = allReports.filter((r) => {
       if (filters?.reporterUid && r.reporterUid !== filters.reporterUid) return false;
       if (filters?.status && filters.status !== 'All' && r.status !== filters.status) return false;
       if (filters?.category && filters.category !== 'All' && r.finalCategory !== filters.category) return false;
@@ -308,6 +329,13 @@ export const dbService = {
 
       return true;
     });
+
+    if (filters?.page && filters?.limit) {
+      const start = (filters.page - 1) * filters.limit;
+      return filtered.slice(start, start + filters.limit);
+    }
+
+    return filtered;
   },
 
   /**
@@ -342,7 +370,7 @@ export const dbService = {
             .collection(`reports/${reportData.id}/updates`)
             .orderBy('createdAt', 'asc')
             .get();
-          const updates = updatesSnap.docs.map((d: any) => d.data() as ComplaintUpdate);
+          const updates = updatesSnap.docs.map((d) => d.data() as ComplaintUpdate);
           return { report: reportData, updates };
         }
       } catch (err) {
@@ -356,13 +384,13 @@ export const dbService = {
   },
 
   /**
-   * Retrieve privacy-safe public reports feed
+   * Retrieve privacy-safe public reports feed with query limits
    */
-  async getPublicReports(filters?: { category?: string; locality?: string }): Promise<PublicReport[]> {
-    const all = await this.getReports();
+  async getPublicReports(filters?: { category?: string; locality?: string; limit?: number; page?: number }): Promise<PublicReport[]> {
+    const all = await this.getReports({ limit: filters?.limit || 60 });
     const publicReports = all.filter((r) => r.sharePublicly);
 
-    return publicReports
+    const filtered = publicReports
       .filter((r) => {
         if (filters?.category && filters.category !== 'All' && r.finalCategory !== filters.category) return false;
         if (filters?.locality && filters.locality !== 'All' && r.location?.locality !== filters.locality) return false;
@@ -372,12 +400,20 @@ export const dbService = {
         const updates = globalLocalStore.getUpdates(r.id);
         return toPublicReport(r, updates);
       });
+
+    if (filters?.page && filters?.limit) {
+      const start = (filters.page - 1) * filters.limit;
+      return filtered.slice(start, start + filters.limit);
+    }
+
+    return filtered;
   },
 
   /**
    * Create a new complaint report
    */
   async createReport(report: Report): Promise<Report> {
+    cachedDashboardStats = null; // Invalidate dashboard metrics cache on new complaint
     const { firestore, isConfigured } = getFirebaseAdmin();
 
     if (isConfigured && firestore) {
@@ -421,6 +457,7 @@ export const dbService = {
     publicNote?: string,
     internalNote?: string
   ): Promise<Report | null> {
+    cachedDashboardStats = null; // Invalidate dashboard metrics cache on update
     const { firestore, isConfigured } = getFirebaseAdmin();
 
     if (isConfigured && firestore) {
@@ -529,9 +566,14 @@ export const dbService = {
   },
 
   /**
-   * Compute real-time dashboard statistics from database
+   * Compute real-time dashboard statistics from database (with TTL memory caching)
    */
   async getDashboardStats(): Promise<DashboardStats> {
+    const now = Date.now();
+    if (cachedDashboardStats && cachedDashboardStats.expiresAt > now) {
+      return { ...cachedDashboardStats.stats };
+    }
+
     const reports = await this.getReports();
 
     const stats: DashboardStats = {
@@ -580,6 +622,11 @@ export const dbService = {
       stats.departmentWorkload[dept] = (stats.departmentWorkload[dept] || 0) + 1;
     }
 
+    cachedDashboardStats = {
+      stats,
+      expiresAt: now + STATS_CACHE_TTL_MS,
+    };
+
     return stats;
   },
 
@@ -587,6 +634,7 @@ export const dbService = {
    * Reset or re-seed the demonstration dataset
    */
   resetDemoSeed(): void {
+    cachedDashboardStats = null;
     globalLocalStore.reset();
   },
 };

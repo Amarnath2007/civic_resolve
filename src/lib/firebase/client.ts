@@ -30,17 +30,8 @@ export const isFirebaseClientConfigured = Boolean(
   cleanEnv(process.env.NEXT_PUBLIC_FIREBASE_API_KEY) !== 'demo-api-key'
 );
 
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-
-if (getApps().length > 0) {
-  app = getApp();
-} else {
-  app = initializeApp(firebaseConfig);
-}
-
-auth = getAuth(app);
-db = getFirestore(app);
+const app: FirebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const auth: Auth = getAuth(app);
+const db: Firestore = getFirestore(app);
 
 export { app, auth, db };

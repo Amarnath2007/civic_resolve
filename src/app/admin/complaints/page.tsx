@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, useMemo, Suspense } from 'react';
 import NextLink from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -15,12 +15,10 @@ import {
 } from '@/lib/constants';
 import {
   Search,
-  Filter,
   Eye,
   RefreshCw,
-  FileText,
-  MapPin,
-  Download,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 function ComplaintQueueContent() {
@@ -29,6 +27,8 @@ function ComplaintQueueContent() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   // Filters
   const initialSearch = searchParams.get('search') || '';
@@ -39,7 +39,6 @@ function ComplaintQueueContent() {
   const [departmentFilter, setDepartmentFilter] = useState('All');
 
   const fetchReports = async () => {
-    setLoading(true);
     try {
       const headers: Record<string, string> = {};
       if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
@@ -60,24 +59,37 @@ function ComplaintQueueContent() {
     fetchReports();
   }, [idToken]);
 
-  const filtered = reports.filter((r) => {
-    if (statusFilter !== 'All' && r.status !== statusFilter) return false;
-    if (categoryFilter !== 'All' && r.finalCategory !== categoryFilter) return false;
-    if (priorityFilter !== 'All' && r.finalPriority !== priorityFilter) return false;
-    if (departmentFilter !== 'All' && r.finalDepartment !== departmentFilter) return false;
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, categoryFilter, priorityFilter, departmentFilter]);
 
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase().trim();
-      const match =
-        r.trackingCode.toLowerCase().includes(q) ||
-        r.title.toLowerCase().includes(q) ||
-        (r.location?.locality && r.location.locality.toLowerCase().includes(q)) ||
-        r.finalCategory.toLowerCase().includes(q);
-      if (!match) return false;
-    }
+  const filtered = useMemo(() => {
+    return reports.filter((r) => {
+      if (statusFilter !== 'All' && r.status !== statusFilter) return false;
+      if (categoryFilter !== 'All' && r.finalCategory !== categoryFilter) return false;
+      if (priorityFilter !== 'All' && r.finalPriority !== priorityFilter) return false;
+      if (departmentFilter !== 'All' && r.finalDepartment !== departmentFilter) return false;
 
-    return true;
-  });
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase().trim();
+        const match =
+          r.trackingCode.toLowerCase().includes(q) ||
+          r.title.toLowerCase().includes(q) ||
+          (r.location?.locality && r.location.locality.toLowerCase().includes(q)) ||
+          r.finalCategory.toLowerCase().includes(q);
+        if (!match) return false;
+      }
+
+      return true;
+    });
+  }, [reports, statusFilter, categoryFilter, priorityFilter, departmentFilter, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedReports = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
 
   return (
     <div className="space-y-6">
@@ -208,7 +220,7 @@ function ComplaintQueueContent() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((r) => (
+                paginatedReports.map((r) => (
                   <tr key={r.id} className="hover:bg-[#F7F8F4]/80 transition">
                     <td className="py-3.5 px-4 font-mono font-bold text-[#19364A]">
                       {r.trackingCode}
@@ -239,6 +251,40 @@ function ComplaintQueueContent() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination bar */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between p-4 border-t border-[#DDE5DF] bg-[#F7F8F4]/50 text-xs">
+            <span className="text-[#63736F]">
+              Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} complaints
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#DDE5DF] bg-white font-semibold text-[#19364A] hover:bg-[#F7F8F4] disabled:opacity-40 transition cursor-pointer"
+                aria-label="Previous Page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Previous</span>
+              </button>
+              <span className="font-medium text-[#19364A] px-2">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#DDE5DF] bg-white font-semibold text-[#19364A] hover:bg-[#F7F8F4] disabled:opacity-40 transition cursor-pointer"
+                aria-label="Next Page"
+              >
+                <span>Next</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

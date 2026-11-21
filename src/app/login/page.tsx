@@ -143,7 +143,7 @@ export default function LoginPage() {
         </form>
 
         <div className="text-center text-xs text-[#63736F] pt-2 border-t border-[#DDE5DF]">
-          Don't have an account yet?{' '}
+          Don&apos;t have an account yet?{' '}
           <NextLink href="/register" className="font-semibold text-[#24796C] hover:underline">
             Register as a Citizen
           </NextLink>

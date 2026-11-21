@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { DashboardStats, Report } from '@/types';
-import { TrendingUp, CheckCircle2, Clock, AlertTriangle, BarChart3, PieChart } from 'lucide-react';
 
 export default function AdminAnalyticsPage() {
   const { idToken } = useAuth();

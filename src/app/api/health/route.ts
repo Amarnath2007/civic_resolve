@@ -33,9 +33,10 @@ export async function GET() {
           firebaseAuthStatus = 'Working';
           firebaseAuthMsg = 'Service account credentials verified; token minting operational.';
         }
-      } catch (authErr: any) {
+      } catch (authErr: unknown) {
+        const errObj = authErr as Error;
         firebaseAuthStatus = 'Failed';
-        firebaseAuthMsg = authErr?.message?.replace(/key\s*=\s*[^\s&]+/gi, 'key=[REDACTED]') || 'Auth probe failed.';
+        firebaseAuthMsg = errObj?.message?.replace(/key\s*=\s*[^\s&]+/gi, 'key=[REDACTED]') || 'Auth probe failed.';
       }
 
       // Real Firestore connectivity verification: execute a limit(1) read
@@ -43,13 +44,15 @@ export async function GET() {
         const snap = await admin.firestore.collection('reports').limit(1).get();
         firestoreStatus = 'Working';
         firestoreMsg = `Firestore connected; query executed successfully (${snap.size} records found).`;
-      } catch (fsErr: any) {
+      } catch (fsErr: unknown) {
+        const errObj = fsErr as Error;
         firestoreStatus = 'Failed';
-        firestoreMsg = fsErr?.message?.replace(/key\s*=\s*[^\s&]+/gi, 'key=[REDACTED]') || 'Firestore query failed.';
+        firestoreMsg = errObj?.message?.replace(/key\s*=\s*[^\s&]+/gi, 'key=[REDACTED]') || 'Firestore query failed.';
       }
     }
-  } catch (err: any) {
-    const sanitized = err?.message?.replace(/key\s*=\s*[^\s&]+/gi, 'key=[REDACTED]') || 'Error during Firebase check.';
+  } catch (err: unknown) {
+    const errObj = err as Error;
+    const sanitized = errObj?.message?.replace(/key\s*=\s*[^\s&]+/gi, 'key=[REDACTED]') || 'Error during Firebase check.';
     firebaseAdminMsg = sanitized;
     firebaseAuthMsg = sanitized;
     firestoreMsg = sanitized;
@@ -59,6 +62,7 @@ export async function GET() {
   let geminiStatus: 'Working' | 'Failed' = 'Failed';
   let geminiMsg = 'Not configured';
   const geminiModel = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  let activeModel = geminiModel;
 
   try {
     const geminiKey = process.env.GEMINI_API_KEY;
@@ -67,8 +71,7 @@ export async function GET() {
     } else {
       const ai = new GoogleGenAI({ apiKey: geminiKey });
       const candidates = [geminiModel, 'gemini-3.7-flash', 'gemini-2.5-flash'];
-      let lastErr: any = null;
-      let activeModel = geminiModel;
+      let lastErr: Error | null = null;
 
       for (const m of candidates) {
         try {
@@ -83,9 +86,10 @@ export async function GET() {
             geminiMsg = `Model ${m} operational; response received.`;
             break;
           }
-        } catch (e: any) {
-          lastErr = e;
-          if (e?.status === 503 || e?.status === 429) continue;
+        } catch (e: unknown) {
+          const errObj = e as Error & { status?: number };
+          lastErr = errObj;
+          if (errObj?.status === 503 || errObj?.status === 429) continue;
           break;
         }
       }
@@ -94,9 +98,10 @@ export async function GET() {
         throw lastErr;
       }
     }
-  } catch (geminiErr: any) {
+  } catch (geminiErr: unknown) {
+    const errObj = geminiErr as Error;
     geminiStatus = 'Failed';
-    geminiMsg = geminiErr?.message?.replace(/key\s*=\s*[^\s&]+/gi, 'key=[REDACTED]') || 'Gemini API call failed.';
+    geminiMsg = errObj?.message?.replace(/key\s*=\s*[^\s&]+/gi, 'key=[REDACTED]') || 'Gemini API call failed.';
   }
 
   // 3. Cloudinary
@@ -126,9 +131,10 @@ export async function GET() {
         cloudinaryMsg = 'Unexpected response from Cloudinary API.';
       }
     }
-  } catch (cloudErr: any) {
+  } catch (cloudErr: unknown) {
     cloudinaryStatus = 'Failed';
-    const rawMsg = cloudErr?.error?.message || cloudErr?.message || String(cloudErr);
+    const errObj = cloudErr as { error?: { message?: string }; message?: string };
+    const rawMsg = errObj?.error?.message || errObj?.message || String(cloudErr);
     cloudinaryMsg = rawMsg.replace(/key\s*=\s*[^\s&]+/gi, 'key=[REDACTED]');
   }
 
@@ -172,7 +178,7 @@ export async function GET() {
         },
         geminiAPI: {
           status: geminiStatus,
-          model: geminiModel,
+          model: activeModel,
           message: geminiMsg,
         },
         cloudinary: {

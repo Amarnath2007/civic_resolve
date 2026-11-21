@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Report } from '@/types';
-import { History, ShieldCheck, UserCheck, Calendar } from 'lucide-react';
+import { History, Calendar } from 'lucide-react';
 
 export default function AdminAuditTrailPage() {
   const { idToken } = useAuth();

@@ -47,7 +47,19 @@ export async function authenticateRequest(
 
   let user: AuthenticatedUser | null = null;
 
-  if (isConfigured && auth) {
+  if (token.startsWith('demo-token:') && (process.env.NODE_ENV === 'test' || !isConfigured)) {
+    // Synthetic demo token format for unit testing and offline development: demo-token:email:uid
+    const parts = token.split(':');
+    const email = parts[1] || 'demo@civicresolve.org';
+    const uid = parts[2] || 'demo-user-uid';
+    const isAdmin = isEmailAdmin(email);
+    user = {
+      uid,
+      email,
+      displayName: email.split('@')[0],
+      isAdmin,
+    };
+  } else if (isConfigured && auth) {
     try {
       const decodedToken = await auth.verifyIdToken(token);
       const email = decodedToken.email || '';
@@ -61,8 +73,9 @@ export async function authenticateRequest(
         displayName: decodedToken.name || (email ? email.split('@')[0] : 'User'),
         isAdmin,
       };
-    } catch (err: any) {
-      console.warn('Firebase ID Token verification error:', err.message);
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      console.warn('Firebase ID Token verification error:', errorObj.message);
       return {
         user: null,
         error: 'Invalid or expired authentication session. Please sign in again.',

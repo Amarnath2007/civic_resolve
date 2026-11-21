@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import NextLink from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { LocationPicker } from '@/components/map/LocationPicker';
-import { PriorityBadge } from '@/components/ui/PriorityBadge';
 import { PriorityScoreCard } from '@/components/ui/PriorityScoreCard';
 import { AiAssessmentCard } from '@/components/ui/AiAssessmentCard';
 import { CIVIC_CATEGORIES } from '@/lib/constants';
@@ -18,19 +17,12 @@ import {
   AlertTriangle,
   ArrowRight,
   Shield,
-  HelpCircle,
   Copy,
   Check,
-  Building2,
-  FileText,
-  MapPin,
-  Image as ImageIcon,
   UserCheck,
-  Lock,
 } from 'lucide-react';
 
 function ReportIssueContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { user, idToken, loading: authLoading, loginDemo } = useAuth();
   const [isDemoSigningIn, setIsDemoSigningIn] = useState(false);
@@ -38,7 +30,10 @@ function ReportIssueContent() {
   // Form states
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState<CivicCategory>('Other / Not Sure');
+  const initialCat = (searchParams.get('cat') && CIVIC_CATEGORIES.includes(searchParams.get('cat') as CivicCategory))
+    ? (searchParams.get('cat') as CivicCategory)
+    : 'Other / Not Sure';
+  const [category, setCategory] = useState<CivicCategory>(initialCat);
   const [locality, setLocality] = useState('');
   const [streetOrLandmark, setStreetOrLandmark] = useState('');
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
@@ -57,14 +52,6 @@ function ReportIssueContent() {
   const [submittedReport, setSubmittedReport] = useState<Report | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  // Pre-populate category from query param if provided
-  useEffect(() => {
-    const qCat = searchParams.get('cat');
-    if (qCat && CIVIC_CATEGORIES.includes(qCat as CivicCategory)) {
-      setCategory(qCat as CivicCategory);
-    }
-  }, [searchParams]);
-
   // One-click quick demo login for citizen
   const handleQuickCitizenDemo = async () => {
     setIsDemoSigningIn(true);
@@ -74,8 +61,9 @@ function ReportIssueContent() {
       if (!res.success) {
         setImageError(res.error || 'Failed to authenticate citizen demo account.');
       }
-    } catch (err: any) {
-      setImageError(err.message || 'Error signing in as citizen.');
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      setImageError(errorObj.message || 'Error signing in as citizen.');
     } finally {
       setIsDemoSigningIn(false);
     }
@@ -386,7 +374,7 @@ function ReportIssueContent() {
             ))}
           </select>
           <p className="text-[11px] text-[#63736F]">
-            Select "Other / Not Sure" if you are uncertain—our AI will classify it accurately.
+            Select &quot;Other / Not Sure&quot; if you are uncertain—our AI will classify it accurately.
           </p>
         </div>
 

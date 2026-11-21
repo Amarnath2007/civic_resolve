@@ -20,7 +20,6 @@
 # Local env files
 .env*.local
 .env
-!.env.example
 
 # Vercel
 .vercel
@@ -28,3 +27,6 @@
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Ensure example env is tracked
+!.env.example

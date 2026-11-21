@@ -1,29 +1,27 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import NextLink from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { PriorityBadge } from '@/components/ui/PriorityBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { Report, ComplaintStatus } from '@/types';
+import { Report } from '@/types';
 import {
   FileText,
   PlusCircle,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
   MapPin,
   ArrowRight,
-  Filter,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 export default function MyReportsPage() {
-  const router = useRouter();
   const { user, idToken, loading: authLoading } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
   useEffect(() => {
     async function fetchUserReports() {
@@ -58,6 +56,34 @@ export default function MyReportsPage() {
     }
   }, [user, idToken, authLoading]);
 
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus]);
+
+  // Summary Metrics using useMemo to avoid recalculation on render
+  const { total, inProgress, resolved } = useMemo(() => {
+    let act = 0;
+    let res = 0;
+    for (const r of reports) {
+      if (r.status === 'In Progress' || r.status === 'Under Review') act++;
+      else if (r.status === 'Resolved') res++;
+    }
+    return { total: reports.length, inProgress: act, resolved: res };
+  }, [reports]);
+
+  // Filtered reports using useMemo
+  const filtered = useMemo(() => {
+    if (filterStatus === 'All') return reports;
+    return reports.filter((r) => r.status === filterStatus);
+  }, [reports, filterStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedReports = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);
+
   if (authLoading) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-20 text-center">
@@ -86,16 +112,6 @@ export default function MyReportsPage() {
       </div>
     );
   }
-
-  // Summary Metrics
-  const total = reports.length;
-  const inProgress = reports.filter((r) => r.status === 'In Progress' || r.status === 'Under Review').length;
-  const resolved = reports.filter((r) => r.status === 'Resolved').length;
-
-  const filtered = reports.filter((r) => {
-    if (filterStatus === 'All') return true;
-    return r.status === filterStatus;
-  });
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
@@ -141,10 +157,12 @@ export default function MyReportsPage() {
       </div>
 
       {/* Filters Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-[#DDE5DF] pb-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-[#DDE5DF] pb-3" role="tablist" aria-label="Status filters">
         {['All', 'Reported', 'Under Review', 'In Progress', 'Resolved'].map((st) => (
           <button
             key={st}
+            role="tab"
+            aria-selected={filterStatus === st}
             onClick={() => setFilterStatus(st)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
               filterStatus === st
@@ -159,7 +177,7 @@ export default function MyReportsPage() {
 
       {/* Complaint List */}
       {loading ? (
-        <div className="py-12 text-center text-xs text-[#63736F]">Loading your reports...</div>
+        <div className="py-12 text-center text-xs text-[#63736F]" aria-live="polite">Loading your reports...</div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#DDE5DF] p-12 text-center space-y-4">
           <div className="w-12 h-12 bg-[#F7F8F4] text-[#63736F] rounded-full mx-auto flex items-center justify-center">
@@ -178,7 +196,7 @@ export default function MyReportsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filtered.map((report) => (
+          {paginatedReports.map((report) => (
             <div
               key={report.id}
               className="bg-white rounded-xl border border-[#DDE5DF] p-5 shadow-sm hover:border-[#24796C] transition space-y-3"
@@ -220,6 +238,40 @@ export default function MyReportsPage() {
               </div>
             </div>
           ))}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-[#DDE5DF] pt-4 px-2" aria-label="Pagination Navigation">
+              <span className="text-xs text-[#63736F]">
+                Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filtered.length)} of {filtered.length} reports
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#DDE5DF] bg-white text-xs font-semibold text-[#19364A] hover:bg-[#F7F8F4] disabled:opacity-40 transition cursor-pointer"
+                  aria-label="Previous Page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous</span>
+                </button>
+                <span className="text-xs font-medium text-[#19364A] px-2">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#DDE5DF] bg-white text-xs font-semibold text-[#19364A] hover:bg-[#F7F8F4] disabled:opacity-40 transition cursor-pointer"
+                  aria-label="Next Page"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

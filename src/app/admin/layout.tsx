@@ -10,9 +10,7 @@ import {
   FileText,
   AlertTriangle,
   Layers,
-  BarChart3,
   History,
-  ShieldCheck,
   ShieldAlert,
   LogOut,
   Menu,
@@ -20,7 +18,6 @@ import {
   ExternalLink,
   Database,
   Search,
-  RefreshCw,
   MapPin,
   CheckCircle2,
   ChevronRight,
@@ -59,6 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.refresh();
       }
     } catch (err) {
+      console.error('Failed to re-seed demo data:', err);
       alert('Failed to re-seed demo data.');
     } finally {
       setIsReSeeding(false);

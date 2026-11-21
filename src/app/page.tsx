@@ -2,7 +2,6 @@ import React from 'react';
 import NextLink from 'next/link';
 import Image from 'next/image';
 import {
-  Building2,
   ArrowRight,
   ShieldCheck,
   Search,
@@ -10,7 +9,6 @@ import {
   Clock,
   Sparkles,
   MapPin,
-  Users,
   AlertCircle,
   Trash2,
   Lightbulb,
@@ -20,7 +18,6 @@ import {
   HelpCircle,
   ThumbsUp,
   FileText,
-  Activity,
 } from 'lucide-react';
 import { dbService } from '@/lib/db/store';
 import { PriorityBadge } from '@/components/ui/PriorityBadge';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ZoomIn,
   ZoomOut,
@@ -8,7 +8,6 @@ import {
   X,
   Image as ImageIcon,
   AlertTriangle,
-  Download,
   ExternalLink,
   ShieldCheck,
 } from 'lucide-react';
@@ -34,6 +33,19 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+
+  // Close modal on Escape key press (WCAG 2.1 modal interaction)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        setZoomLevel(1);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   if (!src) {
     return (
@@ -83,12 +95,22 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
           </div>
         ) : (
           <div
-            className="cursor-pointer relative overflow-hidden flex items-center justify-center min-h-[200px] max-h-[340px] bg-slate-950"
+            role="button"
+            tabIndex={0}
+            aria-label="Click to enlarge and inspect evidence photograph"
+            className="cursor-pointer relative overflow-hidden flex items-center justify-center min-h-[200px] max-h-[340px] bg-slate-950 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#24796C]"
             onClick={() => setIsOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsOpen(true);
+              }
+            }}
           >
             <img
               src={src}
               alt={alt}
+              loading="lazy"
               onLoad={() => setIsLoading(false)}
               onError={() => {
                 setIsLoading(false);
@@ -131,6 +153,9 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
       {/* Full-Screen Lightbox Modal */}
       {isOpen && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photographic Evidence Lightbox"
           className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 animate-in fade-in duration-200"
           onClick={() => {
             setIsOpen(false);

@@ -1,5 +1,4 @@
-import { Report, ComplaintStatus, CivicCategory, CivicDepartment, PriorityLevel } from '@/types';
-import { calculatePriorityScore, mapScoreToPriorityLevel } from './scoring';
+import { Report } from '@/types';
 
 export const INITIAL_DEMO_REPORTS: Report[] = [
   {

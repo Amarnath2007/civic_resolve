@@ -1,54 +1,38 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import NextLink from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { PriorityBadge } from '@/components/ui/PriorityBadge';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { Report, DashboardStats } from '@/types';
+import { Report } from '@/types';
 import {
   FileText,
   Clock,
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  TrendingUp,
+  MapPin,
+  Eye,
   Layers,
   Building2,
-  ShieldCheck,
-  AlertCircle,
-  Eye,
-  MapPin,
 } from 'lucide-react';
 
 export default function AdminOverviewPage() {
-  const router = useRouter();
   const { idToken } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      setLoading(true);
       try {
         const headers: Record<string, string> = {};
         if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
 
-        const [resReports, resStats] = await Promise.all([
-          fetch('/api/reports', { headers }),
-          fetch('/api/admin/stats', { headers }),
-        ]);
+        const resReports = await fetch('/api/reports', { headers });
 
         if (resReports.ok) {
           const d = await resReports.json();
           setReports(d.reports || []);
-        }
-
-        if (resStats.ok) {
-          const s = await resStats.json();
-          setStats(s.stats);
         }
       } catch (err) {
         console.error('Failed to load admin overview:', err);
@@ -60,22 +44,16 @@ export default function AdminOverviewPage() {
     loadData();
   }, [idToken]);
 
-  if (loading) {
-    return (
-      <div className="py-20 text-center space-y-3">
-        <div className="w-8 h-8 border-3 border-[#24796C] border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs text-[#63736F]">Compiling municipal intelligence overview...</p>
-      </div>
+  const { criticalIssues, inProgressCount, resolvedCount } = useMemo(() => {
+    const crit = reports.filter(
+      (r) => r.finalPriority === 'Critical' && r.status !== 'Resolved'
     );
-  }
-
-  const criticalIssues = reports.filter(
-    (r) => r.finalPriority === 'Critical' && r.status !== 'Resolved'
-  );
-  const inProgressCount = reports.filter(
-    (r) => r.status === 'In Progress' || r.status === 'Under Review'
-  ).length;
-  const resolvedCount = reports.filter((r) => r.status === 'Resolved').length;
+    const inProg = reports.filter(
+      (r) => r.status === 'In Progress' || r.status === 'Under Review'
+    ).length;
+    const res = reports.filter((r) => r.status === 'Resolved').length;
+    return { criticalIssues: crit, inProgressCount: inProg, resolvedCount: res };
+  }, [reports]);
 
   return (
     <div className="space-y-8">

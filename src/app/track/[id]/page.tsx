@@ -16,12 +16,10 @@ import {
   Building2,
   MapPin,
   Calendar,
-  Sparkles,
   ThumbsUp,
   AlertCircle,
   Copy,
   Check,
-  Tag,
 } from 'lucide-react';
 
 export default function TrackDetailPage() {

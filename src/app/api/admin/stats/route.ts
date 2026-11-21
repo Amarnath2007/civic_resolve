@@ -14,11 +14,19 @@ export async function GET(req: NextRequest) {
     }
 
     const stats = await dbService.getDashboardStats();
-    return NextResponse.json({ success: true, stats });
-  } catch (error: any) {
-    console.error('API GET /api/admin/stats error:', error);
     return NextResponse.json(
-      { error: 'Failed to retrieve admin analytics.', details: error.message },
+      { success: true, stats },
+      {
+        headers: {
+          'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+        },
+      }
+    );
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API GET /api/admin/stats error:', err);
+    return NextResponse.json(
+      { error: 'Failed to retrieve admin analytics.', details: err.message },
       { status: 500 }
     );
   }

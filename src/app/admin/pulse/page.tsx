@@ -5,7 +5,7 @@ import NextLink from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Report } from '@/types';
 import { findNearbyRelatedReports } from '@/lib/geo';
-import { Layers, MapPin, Sparkles, ArrowRight, Eye, RefreshCw } from 'lucide-react';
+import { Sparkles, Eye, RefreshCw } from 'lucide-react';
 
 export default function AdminPulseClustersPage() {
   const { idToken } = useAuth();

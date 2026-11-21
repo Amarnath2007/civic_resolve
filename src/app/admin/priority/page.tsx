@@ -4,9 +4,8 @@ import React, { useEffect, useState } from 'react';
 import NextLink from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { PriorityBadge } from '@/components/ui/PriorityBadge';
-import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Report } from '@/types';
-import { AlertTriangle, MapPin, Eye, RefreshCw, Flame } from 'lucide-react';
+import { MapPin, Eye, RefreshCw, Flame } from 'lucide-react';
 
 export default function AdminPriorityQueuePage() {
   const { idToken } = useAuth();

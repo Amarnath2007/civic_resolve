@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import NextLink from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { PriorityBadge } from '@/components/ui/PriorityBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -27,25 +27,17 @@ import {
 import {
   ArrowLeft,
   Building2,
-  MapPin,
-  Calendar,
-  Sparkles,
-  ShieldCheck,
   CheckCircle2,
   AlertTriangle,
-  FileText,
   ExternalLink,
-  Edit,
   Save,
-  MessageSquare,
   Lock,
 } from 'lucide-react';
 
 export default function AdminComplaintDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
-  const { user, idToken } = useAuth();
+  const { idToken } = useAuth();
 
   const [report, setReport] = useState<Report | null>(null);
   const [updates, setUpdates] = useState<ComplaintUpdate[]>([]);
@@ -86,9 +78,10 @@ export default function AdminComplaintDetailPage() {
         setEditCategory(rep.finalCategory);
         setEditDepartment(rep.finalDepartment);
         setEditPriority(rep.finalPriority);
-      } catch (err: any) {
-        console.error('Fetch detail error:', err);
-        setError(err.message || 'Complaint not found.');
+      } catch (err: unknown) {
+        const errorObj = err as Error;
+        console.error('Fetch detail error:', errorObj);
+        setError(errorObj.message || 'Complaint not found.');
       } finally {
         setLoading(false);
       }
@@ -134,8 +127,9 @@ export default function AdminComplaintDetailPage() {
       setSaveSuccessMsg('Administrative record and dispatch note successfully updated.');
       setPublicUpdateNote('');
       setInternalAdminNote('');
-    } catch (err: any) {
-      alert(err.message || 'Update failed.');
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      alert(errorObj.message || 'Update failed.');
     } finally {
       setSaving(false);
     }

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Building2, ArrowRight, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Search, ArrowRight, HelpCircle } from 'lucide-react';
 
 export default function TrackSearchPage() {
   const router = useRouter();

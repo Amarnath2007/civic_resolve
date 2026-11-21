@@ -5,7 +5,7 @@ import NextLink from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Report } from '@/types';
 import { CIVIC_DEPARTMENTS } from '@/lib/constants';
-import { Building2, Clock, AlertTriangle, ArrowRight, RefreshCw } from 'lucide-react';
+import { Building2, ArrowRight, RefreshCw } from 'lucide-react';
 
 export default function AdminDepartmentsPage() {
   const { idToken } = useAuth();

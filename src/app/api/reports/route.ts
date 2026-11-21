@@ -34,6 +34,8 @@ export async function GET(req: NextRequest) {
     const department = searchParams.get('department') || undefined;
     const reporterUid = searchParams.get('reporterUid') || undefined;
     const search = searchParams.get('search') || undefined;
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : undefined;
+    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!, 10) : undefined;
 
     // Strict privacy protection: filtering by reporterUid requires authentication
     if (reporterUid) {
@@ -59,13 +61,23 @@ export async function GET(req: NextRequest) {
       department,
       reporterUid,
       search,
+      limit,
+      page,
     });
 
-    return NextResponse.json({ success: true, count: reports.length, reports });
-  } catch (error: any) {
-    console.error('API GET /api/reports error:', error);
     return NextResponse.json(
-      { error: 'Failed to retrieve reports.', details: error.message },
+      { success: true, count: reports.length, reports },
+      {
+        headers: {
+          'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+        },
+      }
+    );
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('API GET /api/reports error:', err);
+    return NextResponse.json(
+      { error: 'Failed to retrieve reports.', details: err.message },
       { status: 500 }
     );
   }
