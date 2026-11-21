@@ -12,6 +12,9 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "overrides": {
+    "jose": "^4.15.9"
+  },
   "dependencies": {
     "@google/genai": "^3.6.1",
     "cloudinary": "^2.11.0",
